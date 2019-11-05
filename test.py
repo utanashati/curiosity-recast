@@ -7,8 +7,19 @@ import torch.nn.functional as F
 from envs import create_atari_env
 from model import ActorCritic
 
+import tensorboard_logger as tb
+import logger
+import os
 
-def test(rank, args, shared_model, counter):
+
+logger = logger.getLogger('test')
+
+
+def test(rank, args, shared_model, counter, optimizer):
+    models_dir = args.sum_base_dir + '/models'
+    if not os.path.exists(models_dir):
+        os.makedirs(models_dir)
+
     torch.manual_seed(args.seed + rank)
 
     env = create_atari_env(args.env_name)
@@ -22,6 +33,8 @@ def test(rank, args, shared_model, counter):
     state = torch.from_numpy(state)
     reward_sum = 0
     done = True
+
+    count_done = 0
 
     start_time = time.time()
 
@@ -54,11 +67,33 @@ def test(rank, args, shared_model, counter):
             done = True
 
         if done:
-            print("Time {}, num steps {}, FPS {:.0f}, episode reward {}, episode length {}".format(
-                time.strftime("%Hh %Mm %Ss",
-                              time.gmtime(time.time() - start_time)),
-                counter.value, counter.value / (time.time() - start_time),
-                reward_sum, episode_length))
+            count_done += 1
+
+            passed_time = time.time() - start_time
+            logger.info(
+                "Episode {}: time {}, num steps {}, FPS {:.0f}, "
+                "reward {}, length {}".format(
+                    count_done,
+                    time.strftime("%Hh %Mm %Ss",
+                                  time.gmtime(passed_time)),
+                    counter.value, counter.value / passed_time,
+                    reward_sum, episode_length))
+
+            if count_done % args.save_again_eps == 0:
+                torch.save(
+                    model.state_dict(),
+                    models_dir + '/model_' +
+                    time.strftime('%Y.%m.%d-%H.%M.%S') + '.pth')
+                torch.save(
+                    optimizer.state_dict(),
+                    models_dir + '/optimizer_' +
+                    time.strftime('%Y.%m.%d-%H.%M.%S') + '.pth')
+                print("Saved the model")
+
+            tb.log_value(
+                'steps_second', counter.value / passed_time, counter.value)
+            tb.log_value('reward', reward_sum, counter.value)
+
             reward_sum = 0
             episode_length = 0
             actions.clear()

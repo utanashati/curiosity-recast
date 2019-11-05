@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import argparse
 import os
+import time
 
 import torch
 import torch.multiprocessing as mp
@@ -11,6 +12,12 @@ from envs import create_atari_env
 from model import ActorCritic
 from test import test
 from train import train
+
+import tensorboard_logger as tb
+import logger
+
+
+logger = logger.getLogger('main')
 
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
@@ -39,7 +46,23 @@ parser.add_argument('--max-episode-length', type=int, default=1000000,
 parser.add_argument('--env-name', default='PongDeterministic-v4',
                     help='environment to train on (default: PongDeterministic-v4)')
 parser.add_argument('--no-shared', default=False,
-                    help='use an optimizer without shared momentum.')
+                    help='use an optimizer without shared momentum')
+
+parser.add_argument('--short-description', default='no_descr',
+                    help='Short description of the run params '
+                    '(used in TensorBoard)')
+parser.add_argument('--save-again-eps', type=int, default=20,
+                    help='Save the model every _ episodes')
+
+
+def setup_loggings(args):
+    logger.debug('CONFIGURATION: {}'.format(args))
+
+    current_path = os.path.dirname(os.path.realpath(__file__))
+    args.sum_base_dir = (current_path + '/runs/{}/{}({})').format(
+        args.env_name, time.strftime('%Y.%m.%d-%H.%M'), args.short_description)
+    logger.info('Logging run logs to {}'.format(args.sum_base_dir))
+    tb.configure(args.sum_base_dir)
 
 
 if __name__ == '__main__':
@@ -47,6 +70,8 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
     args = parser.parse_args()
+
+    setup_loggings(args)
 
     torch.manual_seed(args.seed)
     env = create_atari_env(args.env_name)
@@ -65,12 +90,17 @@ if __name__ == '__main__':
     counter = mp.Value('i', 0)
     lock = mp.Lock()
 
-    p = mp.Process(target=test, args=(args.num_processes, args, shared_model, counter))
+    p = mp.Process(
+        target=test, args=(
+            args.num_processes, args, shared_model,
+            counter, optimizer))
     p.start()
     processes.append(p)
 
     for rank in range(0, args.num_processes):
-        p = mp.Process(target=train, args=(rank, args, shared_model, counter, lock, optimizer))
+        p = mp.Process(
+            target=train,
+            args=(rank, args, shared_model, counter, lock, optimizer))
         p.start()
         processes.append(p)
     for p in processes:

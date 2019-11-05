@@ -1,0 +1,49 @@
+[2019-10-30 14:22:09] INFO [MainThread:62] Logging run logs to /Users/utanashati/Documents/Programming/thesis-m/curiosity-recast/runs/PongDeterministic-v4/30.10-14.22(no_descr)
+[2019-10-30 14:25:55] INFO [MainThread:62] Logging run logs to /Users/utanashati/Documents/Programming/thesis-m/curiosity-recast/runs/PongDeterministic-v4/30.10-14.25(no_descr)
+[2019-10-30 14:26:09] INFO [MainThread:69] Time 00h 00m 11s, num steps 2240, FPS 191, episode reward -21.0, episode length 812
+[2019-10-30 14:27:10] INFO [MainThread:69] Time 00h 01m 12s, num steps 15388, FPS 211, episode reward -2.0, episode length 100
+[2019-10-30 14:28:11] INFO [MainThread:69] Time 00h 02m 14s, num steps 28498, FPS 212, episode reward -2.0, episode length 100
+[2019-10-30 14:29:12] INFO [MainThread:69] Time 00h 03m 15s, num steps 41530, FPS 212, episode reward -2.0, episode length 100
+[2019-10-30 14:30:14] INFO [MainThread:69] Time 00h 04m 16s, num steps 54689, FPS 213, episode reward -2.0, episode length 100
+[2019-10-30 14:31:15] INFO [MainThread:69] Time 00h 05m 17s, num steps 65156, FPS 205, episode reward -2.0, episode length 102
+[2019-11-04 16:18:49] INFO [MainThread:62] Logging run logs to /Users/utanashati/Documents/Programming/thesis-m/curiosity-recast/runs/PongDeterministic-v4/04.11-16.18(no_descr)
+[2019-11-04 16:19:00] INFO [MainThread:69] Time 00h 00m 09s, num steps 2223, FPS 234, episode reward -21.0, episode length 812
+[2019-11-04 16:20:01] INFO [MainThread:69] Time 00h 01m 10s, num steps 18874, FPS 268, episode reward -2.0, episode length 102
+[2019-11-04 16:21:10] INFO [MainThread:69] Time 00h 02m 19s, num steps 38024, FPS 272, episode reward -21.0, episode length 764
+[2019-11-04 16:22:18] INFO [MainThread:69] Time 00h 03m 27s, num steps 57422, FPS 276, episode reward -21.0, episode length 764
+[2019-11-04 16:23:26] INFO [MainThread:69] Time 00h 04m 36s, num steps 76854, FPS 278, episode reward -21.0, episode length 764
+[2019-11-04 16:24:35] INFO [MainThread:69] Time 00h 05m 44s, num steps 95766, FPS 278, episode reward -21.0, episode length 764
+[2019-11-04 16:25:47] INFO [MainThread:69] Time 00h 06m 56s, num steps 114304, FPS 274, episode reward -21.0, episode length 764
+[2019-11-04 16:26:56] INFO [MainThread:69] Time 00h 08m 06s, num steps 128989, FPS 265, episode reward -21.0, episode length 764
+[2019-11-04 16:28:06] INFO [MainThread:69] Time 00h 09m 15s, num steps 143248, FPS 258, episode reward -21.0, episode length 764
+[2019-11-04 16:29:16] INFO [MainThread:69] Time 00h 10m 26s, num steps 160511, FPS 256, episode reward -21.0, episode length 783
+[2019-11-04 16:30:27] INFO [MainThread:69] Time 00h 11m 36s, num steps 177472, FPS 255, episode reward -21.0, episode length 783
+[2019-11-04 16:31:43] INFO [MainThread:69] Time 00h 12m 52s, num steps 195856, FPS 253, episode reward -21.0, episode length 1324
+[2019-11-04 16:32:53] INFO [MainThread:69] Time 00h 14m 03s, num steps 212310, FPS 252, episode reward -21.0, episode length 812
+[2019-11-04 16:34:14] INFO [MainThread:69] Time 00h 15m 23s, num steps 229789, FPS 249, episode reward -21.0, episode length 1324
+[2019-11-04 16:35:31] INFO [MainThread:69] Time 00h 16m 40s, num steps 246575, FPS 246, episode reward -21.0, episode length 1324
+[2019-11-05 10:33:25] INFO [MainThread:62] Logging run logs to /Users/utanashati/Documents/Programming/thesis-m/curiosity-recast/runs/PongDeterministic-v4/05.11-10.33(no_descr)
+[2019-11-05 10:33:37] INFO [MainThread:69] Time 00h 00m 10s, num steps 2298, FPS 214, episode reward -21.0, episode length 812
+[2019-11-05 10:39:24] INFO [MainThread:62] Logging run logs to /Users/utanashati/Documents/Programming/thesis-m/curiosity-recast/runs/PongDeterministic-v4/05.11-10.39(no_descr)
+[2019-11-05 10:39:36] INFO [MainThread:70] Time 00h 00m 10s, num steps 2265, FPS 214, episode reward -21.0, episode length 812
+[2019-11-05 10:40:37] INFO [MainThread:70] Time 00h 01m 11s, num steps 17505, FPS 244, episode reward -2.0, episode length 100
+[2019-11-05 10:41:38] INFO [MainThread:70] Time 00h 02m 12s, num steps 32044, FPS 241, episode reward -2.0, episode length 100
+[2019-11-05 10:42:39] INFO [MainThread:70] Time 00h 03m 13s, num steps 49073, FPS 253, episode reward -2.0, episode length 100
+[2019-11-05 10:55:26] INFO [MainThread:64] Logging run logs to /Users/utanashati/Documents/Programming/thesis-m/curiosity-recast/runs/PongDeterministic-v4/19.11.05-10.55(no_descr)
+[2019-11-05 10:55:38] INFO [MainThread:80] Episode 1: time 00h 00m 10s, num steps 2320, FPS 217, reward -21.0, length 812
+[2019-11-05 10:56:04] INFO [MainThread:64] Logging run logs to /Users/utanashati/Documents/Programming/thesis-m/curiosity-recast/runs/PongDeterministic-v4/19.11.05-10.56(no_descr)
+[2019-11-05 10:56:16] INFO [MainThread:80] Episode 1: time 00h 00m 10s, num steps 2376, FPS 237, reward -21.0, length 812
+[2019-11-05 10:57:17] INFO [MainThread:80] Episode 2: time 00h 01m 11s, num steps 19646, FPS 277, reward -2.0, length 100
+[2019-11-05 10:58:18] INFO [MainThread:80] Episode 3: time 00h 02m 11s, num steps 36875, FPS 279, reward -2.0, length 100
+[2019-11-05 10:59:19] INFO [MainThread:80] Episode 4: time 00h 03m 13s, num steps 54196, FPS 281, reward -2.0, length 108
+[2019-11-05 11:00:28] INFO [MainThread:80] Episode 5: time 00h 04m 22s, num steps 73452, FPS 280, reward -21.0, length 764
+[2019-11-05 11:01:38] INFO [MainThread:80] Episode 6: time 00h 05m 32s, num steps 91487, FPS 275, reward -21.0, length 764
+[2019-11-05 11:02:40] INFO [MainThread:80] Episode 7: time 00h 06m 33s, num steps 104896, FPS 266, reward -2.0, length 109
+[2019-11-05 11:03:41] INFO [MainThread:80] Episode 8: time 00h 07m 35s, num steps 118230, FPS 260, reward -2.0, length 116
+[2019-11-05 11:04:51] INFO [MainThread:80] Episode 9: time 00h 08m 45s, num steps 133149, FPS 253, reward -21.0, length 764
+[2019-11-05 11:06:02] INFO [MainThread:80] Episode 10: time 00h 09m 55s, num steps 148327, FPS 249, reward -21.0, length 764
+[2019-11-05 11:07:17] INFO [MainThread:80] Episode 11: time 00h 11m 10s, num steps 167226, FPS 249, reward -21.0, length 1324
+[2019-11-05 11:08:57] INFO [MainThread:80] Episode 12: time 00h 12m 51s, num steps 189289, FPS 245, reward -21.0, length 2004
+[2019-11-05 11:16:54] INFO [MainThread:80] Episode 13: time 00h 20m 48s, num steps 210542, FPS 169, reward -21.0, length 2004
+[2019-11-05 14:33:27] INFO [MainThread:64] Logging run logs to /Users/utanashati/Documents/Programming/thesis-m/curiosity-recast/runs/PongDeterministic-v4/2019.11.05-14.33(no_descr)
+[2019-11-05 14:33:39] INFO [MainThread:80] Episode 1: time 00h 00m 11s, num steps 2287, FPS 206, reward -21.0, length 812
