@@ -51,8 +51,10 @@ parser.add_argument('--no-shared', default=False,
 parser.add_argument('--short-description', default='no_descr',
                     help='Short description of the run params '
                     '(used in TensorBoard)')
-parser.add_argument('--save-again-eps', type=int, default=20,
+parser.add_argument('--save-model-again-eps', type=int, default=20,
                     help='Save the model every _ episodes')
+parser.add_argument('--save-video-again-eps', type=int, default=20,
+                    help='Save the recording every _ episodes')
 
 
 def setup_loggings(args):
