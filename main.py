@@ -12,6 +12,7 @@ from envs import create_atari_env
 from model import ActorCritic
 from test import test
 from train import train
+from train_lock import train_lock
 
 import tensorboard_logger as tb
 import logger
@@ -106,9 +107,14 @@ if __name__ == '__main__':
     p.start()
     processes.append(p)
 
+    if args.lock:
+        train_foo = train_lock
+    else:
+        train_foo = train
+
     for rank in range(0, args.num_processes):
         p = mp.Process(
-            target=train,
+            target=train_foo,
             args=(rank, args, shared_model, counter, lock, optimizer))
         p.start()
         processes.append(p)
