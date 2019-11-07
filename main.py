@@ -49,12 +49,16 @@ parser.add_argument('--no-shared', default=False,
                     help='use an optimizer without shared momentum')
 
 parser.add_argument('--short-description', default='no_descr',
-                    help='Short description of the run params '
+                    help='short description of the run params '
                     '(used in TensorBoard)')
-parser.add_argument('--save-model-again-eps', type=int, default=20,
-                    help='Save the model every _ episodes')
-parser.add_argument('--save-video-again-eps', type=int, default=20,
-                    help='Save the recording every _ episodes')
+parser.add_argument('--save-model-again-eps', type=int, default=3,
+                    help='save the model every _ episodes')
+parser.add_argument('--save-video-again-eps', type=int, default=3,
+                    help='save the recording every _ episodes')
+parser.add_argument('--time-sleep', type=int, default=60,
+                    help='sleep time for test.py')
+parser.add_argument('--lock', default=False,
+                    help='whether to lock gradient update in train.py')
 
 
 def setup_loggings(args):
@@ -63,6 +67,9 @@ def setup_loggings(args):
     current_path = os.path.dirname(os.path.realpath(__file__))
     args.sum_base_dir = (current_path + '/runs/{}/{}({})').format(
         args.env_name, time.strftime('%Y.%m.%d-%H.%M'), args.short_description)
+
+    args_list = [f'{k}: {v}\n' for k, v in vars(args).items()]
+    logger.info("\nArguments:\n----------\n" + ''.join(args_list))
     logger.info('Logging run logs to {}'.format(args.sum_base_dir))
     tb.configure(args.sum_base_dir)
 

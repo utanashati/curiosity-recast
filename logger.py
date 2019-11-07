@@ -28,9 +28,9 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'verbose',
             'filename': 'rl.log',
-            'maxBytes': 10*10**6,
+            'maxBytes': 10 * 10**6,
             'backupCount': 3
-            }
+        }
     },
     'loggers': {
         '': {

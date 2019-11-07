@@ -100,10 +100,22 @@ def train(rank, args, shared_model, counter, lock, optimizer=None):
             policy_loss = policy_loss - \
                 log_probs[i] * gae.detach() - args.entropy_coef * entropies[i]
 
-        optimizer.zero_grad()
+        if args.lock:
+            with lock:
+                optimizer.zero_grad()
 
-        (policy_loss + args.value_loss_coef * value_loss).backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+                (policy_loss + args.value_loss_coef * value_loss).backward()
+                torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), args.max_grad_norm)
 
-        ensure_shared_grads(model, shared_model)
-        optimizer.step()
+                ensure_shared_grads(model, shared_model)
+                optimizer.step()
+        else:
+            optimizer.zero_grad()
+
+            (policy_loss + args.value_loss_coef * value_loss).backward()
+            torch.nn.utils.clip_grad_norm_(
+                model.parameters(), args.max_grad_norm)
+
+            ensure_shared_grads(model, shared_model)
+            optimizer.step()
