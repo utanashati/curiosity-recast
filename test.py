@@ -8,12 +8,9 @@ from envs import create_atari_env
 from model import ActorCritic
 
 import tensorboard_logger as tb
-import logger
+import logging
 import os
 from gym import wrappers
-
-
-logger = logger.getLogger('test')
 
 
 def test(rank, args, shared_model, counter, optimizer):
@@ -66,10 +63,10 @@ def test(rank, args, shared_model, counter, optimizer):
                     str(current_counter))
                 if not os.path.exists(video_dir):
                     os.makedirs(video_dir)
-                logger.info("Created new dir " + video_dir)
+                logging.info("Created new video dir")
 
                 env = wrappers.Monitor(env_to_wrap, video_dir, force=False)
-                logger.info("Created new wrapper")
+                logging.info("Created new wrapper")
 
             state = env.reset()
             state = torch.from_numpy(state)
@@ -93,7 +90,7 @@ def test(rank, args, shared_model, counter, optimizer):
             done = True
 
         if done:
-            logger.info(
+            logging.info(
                 "Episode {}: time {}, num steps {}, FPS {:.0f}, "
                 "reward {}, length {}".format(
                     count_done,
@@ -113,7 +110,7 @@ def test(rank, args, shared_model, counter, optimizer):
                     models_dir + '/optimizer_' +
                     time.strftime('%Y.%m.%d-%H.%M.%S') +
                     f'_{current_counter}.pth')
-                logger.info("Saved the model")
+                logging.info("Saved the model")
 
             tb.log_value(
                 'steps_second', current_counter / passed_time, current_counter)
@@ -121,7 +118,7 @@ def test(rank, args, shared_model, counter, optimizer):
 
             env.close()  # Close the window after the rendering session
             env_to_wrap.close()
-            logger.info("Episode done, close all")
+            logging.info("Episode done, close all")
 
             reward_sum = 0
             episode_length = 0

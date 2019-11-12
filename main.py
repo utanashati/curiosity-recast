@@ -15,10 +15,8 @@ from train import train
 from train_lock import train_lock
 
 import tensorboard_logger as tb
+import logging
 import logger
-
-
-logger = logger.getLogger('main')
 
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
@@ -63,15 +61,18 @@ parser.add_argument('--lock', default=False,
 
 
 def setup_loggings(args):
-    logger.debug('CONFIGURATION: {}'.format(args))
-
     current_path = os.path.dirname(os.path.realpath(__file__))
     args.sum_base_dir = (current_path + '/runs/{}/{}({})').format(
         args.env_name, time.strftime('%Y.%m.%d-%H.%M'), args.short_description)
 
+    if not os.path.exists(args.sum_base_dir):
+        os.makedirs(args.sum_base_dir)
+
+    logger.configure(args.sum_base_dir)
+
     args_list = [f'{k}: {v}\n' for k, v in vars(args).items()]
-    logger.info("\nArguments:\n----------\n" + ''.join(args_list))
-    logger.info('Logging run logs to {}'.format(args.sum_base_dir))
+    logging.info("\nArguments:\n----------\n" + ''.join(args_list))
+    logging.info('Logging run logs to {}'.format(args.sum_base_dir))
     tb.configure(args.sum_base_dir)
 
 

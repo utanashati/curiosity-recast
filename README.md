@@ -5,7 +5,8 @@ This code is based on the [A3C implementaiton](https://github.com/ikostrikov/pyt
 ### AWS Deep Learning AMI (Ubuntu 16.04)
 ```
 source activate pytorch_p36
-pip install opencv-python gym gym[atari] tensorboard tensorboard_logger
+pip install opencv-python gym tensorboard tensorboard_logger
+pip install gym[atari]
 sudo apt-get install libav-tools
 git clone https://github.com/utanashati/curiosity-recast.git
 cd curiosity-recast
