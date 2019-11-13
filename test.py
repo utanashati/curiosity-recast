@@ -143,6 +143,7 @@ def test(
             tb.log_value(
                 'steps_second', current_counter / passed_time, current_counter)
             tb.log_value('reward', reward_sum, current_counter)
+            tb.log_value('reward_icm', curiosity_reward_sum, current_counter)
 
             env.close()  # Close the window after the rendering session
             env_to_wrap.close()
