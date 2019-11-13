@@ -67,3 +67,61 @@ class ActorCritic(torch.nn.Module):
         x = hx
 
         return self.critic_linear(x), self.actor_linear(x), (hx, cx)
+
+
+# Curiosity-driven Exploration by Self-supervised Prediction
+# arXiv: https://arxiv.org/abs/1705.05363
+class IntrinsicCuriosityModule(torch.nn.Module):
+    def __init__(self, num_inputs, action_space):
+        super(IntrinsicCuriosityModule, self).__init__()
+        self.head = nn.Sequential(
+            nn.Conv2d(num_inputs, 32, 3, stride=2, padding=1),
+            nn.Conv2d(32, 32, 3, stride=2, padding=1),
+            nn.Conv2d(32, 32, 3, stride=2, padding=1),
+            nn.Conv2d(32, 32, 3, stride=2, padding=1)
+        )
+
+        size = 256
+        self.num_actions = action_space.n
+        self.inverse = nn.Sequential(
+            nn.Linear(32 * 3 * 3 * 2, size),
+            nn.ReLU(),
+            nn.Linear(size, self.num_actions)
+        )
+
+        self.forw = nn.Sequential(
+            nn.Linear(32 * 3 * 3 + self.num_actions, size),
+            nn.ReLU(),
+            nn.Linear(size, 32 * 3 * 3)
+        )
+
+        self.apply(weights_init)
+        for i in [0, 2]:
+            self.inverse[i].weight.data = normalized_columns_initializer(
+                self.inverse[i].weight.data, 0.01)
+            self.inverse[i].bias.data.fill_(0)
+
+        for i in [0, 2]:
+            self.forw[i].weight.data = normalized_columns_initializer(
+                self.forw[i].weight.data, 0.01)
+            self.forw[i].bias.data.fill_(0)
+
+        self.train()
+
+    def forward(self, state_old, action, state):
+        phi1 = self.head(state_old)
+        phi2 = self.head(state)
+
+        phi1 = phi1.view(-1, 32 * 3 * 3)
+        phi2 = phi2.view(-1, 32 * 3 * 3)
+
+        g = torch.cat([phi1, phi2], 1)
+        inv_out = self.inverse(g)
+
+        action_onehot = torch.zeros(1, self.num_actions)
+        action_onehot.scatter_(1, action, 1)
+
+        f = torch.cat([phi1, action_onehot], 1)
+        forw_out = self.forw(f)
+
+        return inv_out, forw_out, F.mse_loss(forw_out, phi2.detach())

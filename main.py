@@ -9,10 +9,12 @@ import torch.multiprocessing as mp
 
 import my_optim
 from envs import create_atari_env
-from model import ActorCritic
+from model import ActorCritic, IntrinsicCuriosityModule
 from test import test
 from train import train
 from train_lock import train_lock
+
+from itertools import chain  # ICM
 
 import tensorboard_logger as tb
 import logging
@@ -44,7 +46,7 @@ parser.add_argument('--max-episode-length', type=int, default=1000000,
                     help='maximum length of an episode (default: 1000000)')
 parser.add_argument('--env-name', default='PongDeterministic-v4',
                     help='environment to train on (default: PongDeterministic-v4)')
-parser.add_argument('--no-shared', default=False,
+parser.add_argument('--no-shared', dest='no_shared', action='store_true', default=False,
                     help='use an optimizer without shared momentum')
 
 parser.add_argument('--short-description', default='no_descr',
@@ -56,8 +58,10 @@ parser.add_argument('--save-video-again-eps', type=int, default=3,
                     help='save the recording every _ episodes')
 parser.add_argument('--time-sleep', type=int, default=60,
                     help='sleep time for test.py')
-parser.add_argument('--lock', default=False,
+parser.add_argument('--lock', dest='lock', action='store_true', default=False,
                     help='whether to lock gradient update in train.py')
+parser.add_argument('--forw-loss-weight', type=int, default=0.5,
+                    help='weight of the forward loss in total curiosity loss.')
 
 
 def setup_loggings(args):
@@ -90,10 +94,19 @@ if __name__ == '__main__':
         env.observation_space.shape[0], env.action_space)
     shared_model.share_memory()
 
+    #<---ICM---
+    shared_curiosity = IntrinsicCuriosityModule(
+        env.observation_space.shape[0], env.action_space)
+    shared_curiosity.share_memory()
+    #---ICM--->
+
     if args.no_shared:
         optimizer = None
     else:
-        optimizer = my_optim.SharedAdam(shared_model.parameters(), lr=args.lr)
+        # optimizer = my_optim.SharedAdam(shared_model.parameters(), lr=args.lr)
+        optimizer = my_optim.SharedAdam(  # ICM
+            chain(shared_model.parameters(), shared_curiosity.parameters()),
+            lr=args.lr)
         optimizer.share_memory()
 
     processes = []
@@ -103,7 +116,7 @@ if __name__ == '__main__':
 
     p = mp.Process(
         target=test, args=(
-            args.num_processes, args, shared_model,
+            args.num_processes, args, shared_model, shared_curiosity,
             counter, optimizer))
     p.start()
     processes.append(p)
@@ -116,7 +129,9 @@ if __name__ == '__main__':
     for rank in range(0, args.num_processes):
         p = mp.Process(
             target=train_foo,
-            args=(rank, args, shared_model, counter, lock, optimizer))
+            args=(
+                rank, args, shared_model, shared_curiosity,
+                counter, lock, optimizer))
         p.start()
         processes.append(p)
     for p in processes:

@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 
 from envs import create_atari_env
-from model import ActorCritic
+from model import ActorCritic, IntrinsicCuriosityModule
 
 import tensorboard_logger as tb
 import logging
@@ -13,7 +13,10 @@ import os
 from gym import wrappers
 
 
-def test(rank, args, shared_model, counter, optimizer):
+def test(
+    rank, args, shared_model, shared_curiosity,
+    counter, optimizer
+):
     models_dir = args.sum_base_dir + '/models'
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
@@ -30,10 +33,15 @@ def test(rank, args, shared_model, counter, optimizer):
     model = ActorCritic(
         env_to_wrap.observation_space.shape[0],
         env_to_wrap.action_space)
+    curiosity = IntrinsicCuriosityModule(  # ICM
+        env_to_wrap.observation_space.shape[0],
+        env_to_wrap.action_space)
 
-    model.eval()
+    model.eval
+    curiosity.eval()  # ICM
 
     reward_sum = 0
+    curiosity_reward_sum = 0
     done = True
 
     count_done = 0
@@ -52,6 +60,7 @@ def test(rank, args, shared_model, counter, optimizer):
             current_counter = counter.value
 
             model.load_state_dict(shared_model.state_dict())
+            curiosity.load_state_dict(shared_curiosity.state_dict())
             cx = torch.zeros(1, 256)
             hx = torch.zeros(1, 256)
 
@@ -79,8 +88,17 @@ def test(rank, args, shared_model, counter, optimizer):
         prob = F.softmax(logit, dim=-1)
         action = prob.max(1, keepdim=True)[1].numpy()
 
+        state_old = state  # ICM
+
         state, reward, done, _ = env.step(action[0, 0])
         state = torch.from_numpy(state)
+
+        _, _, curiosity_reward = \
+            curiosity(
+                state_old.unsqueeze(0), torch.tensor(action),
+                state.unsqueeze(0))
+        curiosity_reward_sum += curiosity_reward.detach()
+
         done = done or episode_length >= args.max_episode_length
         reward_sum += reward
 
@@ -92,17 +110,26 @@ def test(rank, args, shared_model, counter, optimizer):
         if done:
             logging.info(
                 "Episode {}: time {}, num steps {}, FPS {:.0f}, "
-                "reward {}, length {}".format(
+                "total R {}, curiosity R {:.2f}, len "
+                "{}".format(
                     count_done,
                     time.strftime("%Hh %Mm %Ss",
                                   time.gmtime(passed_time)),
                     current_counter, current_counter / passed_time,
-                    reward_sum, episode_length))
+                    reward_sum, curiosity_reward_sum, episode_length))
 
-            if count_done % args.save_model_again_eps == 0:
+            if (
+                (count_done % args.save_model_again_eps == 0) and
+                (optimizer is not None)
+            ):
                 torch.save(
                     model.state_dict(),
                     models_dir + '/model_' +
+                    time.strftime('%Y.%m.%d-%H.%M.%S') +
+                    f'_{current_counter}.pth')
+                torch.save(
+                    curiosity.state_dict(),
+                    models_dir + '/curiosity_' +
                     time.strftime('%Y.%m.%d-%H.%M.%S') +
                     f'_{current_counter}.pth')
                 torch.save(
@@ -121,6 +148,7 @@ def test(rank, args, shared_model, counter, optimizer):
             logging.info("Episode done, close all")
 
             reward_sum = 0
+            curiosity_reward_sum = 0
             episode_length = 0
             actions.clear()
             count_done += 1
