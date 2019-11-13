@@ -149,8 +149,8 @@ def train(
 
         optimizer.zero_grad()
 
-        (policy_loss + args.value_loss_coef * value_loss).backward()
-        curiosity_loss.backward()  # ICM
+        (policy_loss + args.value_loss_coef * value_loss +
+            curiosity_loss).backward()  # ICM
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
         torch.nn.utils.clip_grad_norm_(curiosity.parameters(), args.max_grad_norm)
 
