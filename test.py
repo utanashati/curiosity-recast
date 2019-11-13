@@ -3,6 +3,7 @@ from collections import deque
 
 import torch
 import torch.nn.functional as F
+import numpy as np
 
 from envs import create_atari_env
 from model import ActorCritic, IntrinsicCuriosityModule

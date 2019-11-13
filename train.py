@@ -85,7 +85,7 @@ def train(
                 curiosity(
                     state_old.unsqueeze(0), action,
                     state.unsqueeze(0))
-            reward += curiosity_reward.detach()
+            # reward += curiosity_reward.detach()
             # In noreward-rl:
             # self.invloss = tf.reduce_mean(
             #     tf.nn.sparse_softmax_cross_entropy_with_logits(logits, aindex),
@@ -149,9 +149,10 @@ def train(
 
         optimizer.zero_grad()
 
-        (policy_loss + args.value_loss_coef * value_loss +
-            curiosity_loss).backward()  # ICM
+        (policy_loss + args.value_loss_coef * value_loss).backward()
+        curiosity_loss.backward()  # ICM
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+        torch.nn.utils.clip_grad_norm_(curiosity.parameters(), args.max_grad_norm)
 
         ensure_shared_grads(model, shared_model)
         ensure_shared_grads(curiosity, shared_curiosity)
