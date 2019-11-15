@@ -77,7 +77,7 @@ def train(
 
             state_old = state  # ICM
 
-            state, reward, done, _ = env.step(action.numpy())
+            state, external_reward, done, _ = env.step(action.numpy())
             state = torch.from_numpy(state)  # Moved for ICM
 
             # <---ICM---
@@ -85,7 +85,6 @@ def train(
                 curiosity(
                     state_old.unsqueeze(0), action,
                     state.unsqueeze(0))
-            # reward += curiosity_reward.detach()
             # In noreward-rl:
             # self.invloss = tf.reduce_mean(
             #     tf.nn.sparse_softmax_cross_entropy_with_logits(logits, aindex),
@@ -100,7 +99,8 @@ def train(
             # ---ICM--->
 
             done = done or episode_length >= args.max_episode_length
-            reward = max(min(reward, 1), -1)
+            reward = max(min(external_reward, 0.5), -0.5) + \
+                max(min(curiosity_reward.detach(), 0.5), -0.5)
 
             with lock:
                 counter.value += 1

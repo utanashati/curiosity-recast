@@ -41,7 +41,7 @@ def test(
     model.eval
     curiosity.eval()  # ICM
 
-    reward_sum = 0
+    external_reward_sum = 0
     curiosity_reward_sum = 0
     done = True
 
@@ -91,7 +91,7 @@ def test(
 
         state_old = state  # ICM
 
-        state, reward, done, _ = env.step(action[0, 0])
+        state, external_reward, done, _ = env.step(action[0, 0])
         state = torch.from_numpy(state)
 
         _, _, curiosity_reward = \
@@ -101,7 +101,7 @@ def test(
         curiosity_reward_sum += curiosity_reward.detach()
 
         done = done or episode_length >= args.max_episode_length
-        reward_sum += reward
+        external_reward_sum += external_reward
 
         # a quick hack to prevent the agent from stucking
         actions.append(action[0, 0])
@@ -117,7 +117,7 @@ def test(
                     time.strftime("%Hh %Mm %Ss",
                                   time.gmtime(passed_time)),
                     current_counter, current_counter / passed_time,
-                    reward_sum, curiosity_reward_sum, episode_length))
+                    external_reward_sum, curiosity_reward_sum, episode_length))
 
             if (
                 (count_done % args.save_model_again_eps == 0) and
