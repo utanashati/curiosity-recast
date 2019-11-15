@@ -96,14 +96,18 @@ def train(
             # self.forwardloss = self.forwardloss * 288.0 # lenFeatures=288. Factored out to make hyperparams not depend on it.
             prob_curiosity = F.softmax(inv_out, dim=-1)
             log_prob_curiosity = F.log_softmax(logit, dim=-1)
+
             inv_loss += -(log_prob_curiosity * prob_curiosity).sum(
                 1, keepdim=True)
             forw_loss += curiosity_reward
+
+            curiosity_reward = args.eta * curiosity_reward
+
+            reward = max(min(external_reward, args.clip), -args.clip) + \
+                max(min(curiosity_reward.detach(), args.clip), -args.clip)
             # ---ICM--->
 
             done = done or episode_length >= args.max_episode_length
-            reward = max(min(external_reward, args.clip), -args.clip) + \
-                max(min(curiosity_reward.detach(), args.clip), -args.clip)
 
             with lock:
                 counter.value += 1
@@ -122,10 +126,9 @@ def train(
 
         # <---ICM---
         inv_loss = inv_loss / args.num_steps
-        forw_loss = forw_loss / args.num_steps
+        forw_loss = forw_loss * (32 * 3 * 3) * 0.5 / args.num_steps
 
-        curiosity_loss = inv_loss + \
-            args.forw_loss_weight * (32 * 3 * 3) * forw_loss
+        curiosity_loss = inv_loss + args.forw_loss_weight * forw_loss
         # ---ICM--->
 
         R = torch.zeros(1, 1)

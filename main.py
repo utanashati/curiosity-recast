@@ -65,7 +65,9 @@ parser.add_argument('--forw-loss-weight', type=int, default=0.5,
 parser.add_argument('--clip', type=float, default=1.0,
                     help='reward clipping value')
 parser.add_argument('--icm-only', dest='icm_only', action='store_true', default=False,
-                    help='ICM only (no external reward).')
+                    help='ICM only (no external reward)')
+parser.add_argument('--eta', type=float, default=0.01,
+                    help='ICM reward factor.')
 
 
 

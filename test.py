@@ -12,6 +12,8 @@ import logging
 import os
 from gym import wrappers
 
+from model import get_grad_sum
+
 
 def test(
     rank, args, shared_model, shared_curiosity,
@@ -43,6 +45,9 @@ def test(
     external_reward_sum = 0
     curiosity_reward_sum = 0
     curiosity_reward_sum_clipped = 0
+    inv_loss = 0
+    forw_loss = 0
+    curiosity_loss = 0
     done = True
 
     count_done = 0
@@ -87,26 +92,42 @@ def test(
         with torch.no_grad():
             value, logit, (hx, cx) = model((state.unsqueeze(0), (hx, cx)))
         prob = F.softmax(logit, dim=-1)
-        action = prob.max(1, keepdim=True)[1].numpy()
+        action = prob.max(1, keepdim=True)[1].detach()
 
         state_old = state  # ICM
 
-        state, external_reward, done, _ = env.step(action[0, 0])
+        state, external_reward, done, _ = env.step(action[0, 0].numpy())
         state = torch.from_numpy(state)
 
         # external reward = 0 if ICM-only mode
         external_reward = external_reward * (1 - args.icm_only)
 
-        _, _, curiosity_reward = \
+        # <---ICM---
+        inv_out, forw_out, curiosity_reward = \
             curiosity(
-                state_old.unsqueeze(0), torch.tensor(action),
+                state_old.unsqueeze(0), action,
                 state.unsqueeze(0))
+        # In noreward-rl:
+        # self.invloss = tf.reduce_mean(
+        #     tf.nn.sparse_softmax_cross_entropy_with_logits(logits, aindex),
+        #     name="invloss")
+        # self.forwardloss = 0.5 * tf.reduce_mean(tf.square(tf.subtract(f, phi2)), name='forwardloss')
+        # self.forwardloss = self.forwardloss * 288.0 # lenFeatures=288. Factored out to make hyperparams not depend on it.
+        prob_curiosity = F.softmax(inv_out, dim=-1)
+        log_prob_curiosity = F.log_softmax(logit, dim=-1)
+        inv_loss += float(-(log_prob_curiosity * prob_curiosity).sum(
+            1, keepdim=True).detach())
+        forw_loss += float(curiosity_reward.detach())
+
+        curiosity_reward = args.eta * curiosity_reward
         curiosity_reward_sum += curiosity_reward.detach()
         curiosity_reward_sum_clipped += \
             max(min(curiosity_reward.detach(), args.clip), -args.clip)
 
-        done = done or episode_length >= args.max_episode_length
         external_reward_sum += external_reward
+        # ---ICM--->
+
+        done = done or episode_length >= args.max_episode_length
 
         # a quick hack to prevent the agent from stucking
         actions.append(action[0, 0])
@@ -114,16 +135,25 @@ def test(
             done = True
 
         if done:
+            # <---ICM---
+            inv_loss = inv_loss / episode_length
+            forw_loss = forw_loss * (32 * 3 * 3) * 0.5 / episode_length
+
+            curiosity_loss = inv_loss + args.forw_loss_weight * forw_loss
+            # ---ICM--->
+
             logging.info(
-                "Episode {}: time {}, num steps {}, FPS {:.0f}, "
-                "total R {}, curiosity R {:.2f}, curiosity R clipped {:.2f}, "
-                "len {}".format(
+                "\n\nEp {:3d}: time {}, num steps {}, FPS {:.0f}, len {},\n"
+                "        total R {}, curiosity R {:.2f}, curiosity R clipped {:.2f},\n"
+                "        inv loss {:.3f}, forw loss {:.3f}, curiosity loss {:.2f}.\n"
+                "".format(
                     count_done,
                     time.strftime("%Hh %Mm %Ss",
                                   time.gmtime(passed_time)),
                     current_counter, current_counter / passed_time,
-                    external_reward_sum, curiosity_reward_sum,
-                    curiosity_reward_sum_clipped, episode_length))
+                    episode_length, external_reward_sum, curiosity_reward_sum,
+                    curiosity_reward_sum_clipped,
+                    inv_loss, forw_loss, curiosity_loss))
 
             if (
                 (count_done % args.save_model_again_eps == 0) and
@@ -153,6 +183,9 @@ def test(
             tb.log_value(
                 'reward_icm_clipped', curiosity_reward_sum_clipped,
                 current_counter)
+            tb.log_value('loss_inv', inv_loss, current_counter)
+            tb.log_value('loss_forw', forw_loss, current_counter)
+            tb.log_value('loss_curiosity', curiosity_loss, current_counter)
 
             env.close()  # Close the window after the rendering session
             env_to_wrap.close()
@@ -161,6 +194,9 @@ def test(
             external_reward_sum = 0
             curiosity_reward_sum = 0
             episode_length = 0
+            inv_loss = 0
+            forw_loss = 0
+            curiosity_loss = 0
             actions.clear()
             count_done += 1
             time.sleep(args.time_sleep)

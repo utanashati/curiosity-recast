@@ -4,6 +4,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def get_grad_sum(model):
+    grad = 0
+    for param in model.parameters():
+        if param.grad is not None:
+            grad += param.grad.sum()
+    return grad
+
+
 def normalized_columns_initializer(weights, std=1.0):
     out = torch.randn(weights.size())
     out *= std / torch.sqrt(out.pow(2).sum(1, keepdim=True))
