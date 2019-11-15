@@ -63,7 +63,10 @@ parser.add_argument('--lock', dest='lock', action='store_true', default=False,
 parser.add_argument('--forw-loss-weight', type=int, default=0.5,
                     help='weight of the forward loss in total curiosity loss')
 parser.add_argument('--clip', type=float, default=1.0,
-                    help='reward clipping value.')
+                    help='reward clipping value')
+parser.add_argument('--icm-only', dest='lock', action='store_true', default=False,
+                    help='ICM only (no external reward).')
+
 
 
 def setup_loggings(args):

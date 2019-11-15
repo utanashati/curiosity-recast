@@ -80,6 +80,9 @@ def train(
             state, external_reward, done, _ = env.step(action.numpy())
             state = torch.from_numpy(state)  # Moved for ICM
 
+            # external reward = 0 if ICM-only mode
+            external_reward = external_reward * (1 - args.icm_only)
+
             # <---ICM---
             inv_out, forw_out, curiosity_reward = \
                 curiosity(
