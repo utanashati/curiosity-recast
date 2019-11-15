@@ -60,7 +60,7 @@ parser.add_argument('--time-sleep', type=int, default=60,
                     help='sleep time for test.py')
 parser.add_argument('--lock', dest='lock', action='store_true', default=False,
                     help='whether to lock gradient update in train.py')
-parser.add_argument('--forw-loss-weight', type=int, default=0.5,
+parser.add_argument('--forw-loss-weight', type=float, default=0.5,
                     help='weight of the forward loss in total curiosity loss')
 parser.add_argument('--clip', type=float, default=1.0,
                     help='reward clipping value')
