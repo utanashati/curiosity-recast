@@ -94,6 +94,9 @@ def test(
         state, external_reward, done, _ = env.step(action[0, 0])
         state = torch.from_numpy(state)
 
+        # external reward = 0 if ICM-only mode
+        external_reward = external_reward * (1 - args.icm_only)
+
         _, _, curiosity_reward = \
             curiosity(
                 state_old.unsqueeze(0), torch.tensor(action),
