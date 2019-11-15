@@ -42,6 +42,7 @@ def test(
 
     external_reward_sum = 0
     curiosity_reward_sum = 0
+    curiosity_reward_sum_clipped = 0
     done = True
 
     count_done = 0
@@ -98,6 +99,8 @@ def test(
                 state_old.unsqueeze(0), torch.tensor(action),
                 state.unsqueeze(0))
         curiosity_reward_sum += curiosity_reward.detach()
+        curiosity_reward_sum_clipped = \
+            max(min(curiosity_reward.detach(), args.clip), -args.clip)
 
         done = done or episode_length >= args.max_episode_length
         external_reward_sum += external_reward
@@ -110,13 +113,14 @@ def test(
         if done:
             logging.info(
                 "Episode {}: time {}, num steps {}, FPS {:.0f}, "
-                "total R {}, curiosity R {:.2f}, len "
-                "{}".format(
+                "total R {}, curiosity R {:.2f}, curiosity R clipped {:.2f}, "
+                "len {}".format(
                     count_done,
                     time.strftime("%Hh %Mm %Ss",
                                   time.gmtime(passed_time)),
                     current_counter, current_counter / passed_time,
-                    external_reward_sum, curiosity_reward_sum, episode_length))
+                    external_reward_sum, curiosity_reward_sum,
+                    curiosity_reward_sum_clipped, episode_length))
 
             if (
                 (count_done % args.save_model_again_eps == 0) and
@@ -143,6 +147,9 @@ def test(
                 'steps_second', current_counter / passed_time, current_counter)
             tb.log_value('reward', external_reward_sum, current_counter)
             tb.log_value('reward_icm', curiosity_reward_sum, current_counter)
+            tb.log_value(
+                'reward_icm_clipped', curiosity_reward_sum_clipped,
+                current_counter)
 
             env.close()  # Close the window after the rendering session
             env_to_wrap.close()
