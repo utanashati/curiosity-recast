@@ -3,7 +3,6 @@ from collections import deque
 
 import torch
 import torch.nn.functional as F
-import numpy as np
 
 from envs import create_atari_env
 from model import ActorCritic, IntrinsicCuriosityModule
@@ -142,14 +141,14 @@ def test(
 
             tb.log_value(
                 'steps_second', current_counter / passed_time, current_counter)
-            tb.log_value('reward', reward_sum, current_counter)
+            tb.log_value('reward', external_reward_sum, current_counter)
             tb.log_value('reward_icm', curiosity_reward_sum, current_counter)
 
             env.close()  # Close the window after the rendering session
             env_to_wrap.close()
             logging.info("Episode done, close all")
 
-            reward_sum = 0
+            external_reward_sum = 0
             curiosity_reward_sum = 0
             episode_length = 0
             actions.clear()

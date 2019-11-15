@@ -99,8 +99,8 @@ def train(
             # ---ICM--->
 
             done = done or episode_length >= args.max_episode_length
-            reward = max(min(external_reward, 0.5), -0.5) + \
-                max(min(curiosity_reward.detach(), 0.5), -0.5)
+            reward = max(min(external_reward, args.clip), -args.clip) + \
+                max(min(curiosity_reward.detach(), args.clip), -args.clip)
 
             with lock:
                 counter.value += 1

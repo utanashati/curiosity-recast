@@ -61,7 +61,9 @@ parser.add_argument('--time-sleep', type=int, default=60,
 parser.add_argument('--lock', dest='lock', action='store_true', default=False,
                     help='whether to lock gradient update in train.py')
 parser.add_argument('--forw-loss-weight', type=int, default=0.5,
-                    help='weight of the forward loss in total curiosity loss.')
+                    help='weight of the forward loss in total curiosity loss')
+parser.add_argument('--clip', type=float, default=1.0,
+                    help='reward clipping value.')
 
 
 def setup_loggings(args):
