@@ -102,7 +102,7 @@ def test(
                 state_old.unsqueeze(0), torch.tensor(action),
                 state.unsqueeze(0))
         curiosity_reward_sum += curiosity_reward.detach()
-        curiosity_reward_sum_clipped = \
+        curiosity_reward_sum_clipped += \
             max(min(curiosity_reward.detach(), args.clip), -args.clip)
 
         done = done or episode_length >= args.max_episode_length
