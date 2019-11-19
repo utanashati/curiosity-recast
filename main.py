@@ -60,15 +60,16 @@ parser.add_argument('--time-sleep', type=int, default=60,
                     help='sleep time for test.py')
 parser.add_argument('--lock', dest='lock', action='store_true', default=False,
                     help='whether to lock gradient update in train.py')
-parser.add_argument('--forw-loss-weight', type=float, default=0.5,
-                    help='weight of the forward loss in total curiosity loss')
 parser.add_argument('--clip', type=float, default=1.0,
                     help='reward clipping value')
 parser.add_argument('--icm-only', dest='icm_only', action='store_true', default=False,
                     help='ICM only (no external reward)')
 parser.add_argument('--eta', type=float, default=0.01,
-                    help='ICM reward factor.')
-
+                    help='ICM reward factor')
+parser.add_argument('--beta', type=float, default=0.2,
+                    help='curiosity_loss = (1 - args.beta) * inv_loss + args.beta * forw_loss')
+parser.add_argument('--lambda-1', type=float, default=10,
+                    help='1 / lambda from the paper.')
 
 
 def setup_loggings(args):

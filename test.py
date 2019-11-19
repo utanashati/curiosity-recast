@@ -139,7 +139,8 @@ def test(
             inv_loss = inv_loss / episode_length
             forw_loss = forw_loss * (32 * 3 * 3) * 0.5 / episode_length
 
-            curiosity_loss = inv_loss + args.forw_loss_weight * forw_loss
+            curiosity_loss = args.lambda_1 * (
+                (1 - args.beta) * inv_loss + args.beta * forw_loss)
             # ---ICM--->
 
             logging.info(
