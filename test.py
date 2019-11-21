@@ -194,6 +194,7 @@ def test(
 
             external_reward_sum = 0
             curiosity_reward_sum = 0
+            curiosity_reward_sum_clipped = 0
             episode_length = 0
             inv_loss = 0
             forw_loss = 0
