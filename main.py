@@ -11,8 +11,10 @@ import my_optim
 from envs import create_atari_env
 from model import ActorCritic, IntrinsicCuriosityModule
 from test import test
+from test_no_curiosity import test_no_curiosity
 from train import train
 from train_lock import train_lock
+from train_no_curiosity import train_no_curiosity
 
 from itertools import chain  # ICM
 
@@ -73,7 +75,9 @@ parser.add_argument('--lambda-1', type=float, default=10,
 parser.add_argument('--max-episodes', type=int, default=1000,
                     help='finish after _ episodes')
 parser.add_argument('--random-seed', dest='random_seed', action='store_true', default=False,
-                    help='random seed [0, 1000].')
+                    help='random seed [0, 1000]')
+parser.add_argument('--no-curiosity', dest='no_curiosity', action='store_true', default=False,
+                    help='run without curiosity.')
 
 
 def setup_loggings(args):
@@ -133,6 +137,22 @@ if __name__ == '__main__':
     counter = mp.Value('i', 0)
     lock = mp.Lock()
 
+    test_foo = test
+    train_foo = train
+    args_test = (
+        args.num_processes, args, shared_model, shared_curiosity,
+        counter, pids, optimizer)
+
+    if args.lock:
+        train_foo = train_lock
+    elif args.no_curiosity:
+        logging.info("Train without curiosity")
+        train_foo = train_no_curiosity
+        test_foo = test_no_curiosity
+        args_test = (
+            args.num_processes, args, shared_model,
+            counter, pids, optimizer)
+
     p = mp.Process(
         target=test, args=(
             args.num_processes, args, shared_model, shared_curiosity,
@@ -140,17 +160,18 @@ if __name__ == '__main__':
     p.start()
     processes.append(p)
 
-    if args.lock:
-        train_foo = train_lock
-    else:
-        train_foo = train
-
     for rank in range(0, args.num_processes):
+        if args.no_curiosity:
+            args_train = (
+                rank, args, shared_model,
+                counter, lock, pids, optimizer)
+        else:
+            args_train = (
+                rank, args, shared_model, shared_curiosity,
+                counter, lock, pids, optimizer)
         p = mp.Process(
             target=train_foo,
-            args=(
-                rank, args, shared_model, shared_curiosity,
-                counter, lock, pids, optimizer))
+            args=args_train)
         p.start()
         processes.append(p)
     for p in processes:
