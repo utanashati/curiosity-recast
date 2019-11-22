@@ -137,8 +137,8 @@ if __name__ == '__main__':
     counter = mp.Value('i', 0)
     lock = mp.Lock()
 
-    test_foo = test
     train_foo = train
+    test_foo = test
     args_test = (
         args.num_processes, args, shared_model, shared_curiosity,
         counter, pids, optimizer)
@@ -154,7 +154,7 @@ if __name__ == '__main__':
             counter, pids, optimizer)
 
     p = mp.Process(
-        target=test, args=(
+        target=test_foo, args=(
             args.num_processes, args, shared_model, shared_curiosity,
             counter, pids, optimizer))
     p.start()
