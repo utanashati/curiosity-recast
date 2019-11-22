@@ -7,6 +7,8 @@ from model import ActorCritic, IntrinsicCuriosityModule
 
 from itertools import chain  # ICM
 
+import os
+
 
 def ensure_shared_grads(model, shared_model):
     for param, shared_param in zip(model.parameters(),
@@ -18,8 +20,11 @@ def ensure_shared_grads(model, shared_model):
 
 def train(
     rank, args, shared_model, shared_curiosity,
-    counter, lock, optimizer=None
+    counter, lock, pids, optimizer=None
 ):
+    pids.append(os.getpid())
+    print(pids)
+
     torch.manual_seed(args.seed + rank)
 
     env = create_atari_env(args.env_name)

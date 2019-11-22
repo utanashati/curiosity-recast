@@ -10,6 +10,7 @@ from model import ActorCritic, IntrinsicCuriosityModule
 import tensorboard_logger as tb
 import logging
 import os
+import signal
 from gym import wrappers
 
 from model import get_grad_sum
@@ -17,7 +18,7 @@ from model import get_grad_sum
 
 def test(
     rank, args, shared_model, shared_curiosity,
-    counter, optimizer
+    counter, pids, optimizer
 ):
     models_dir = args.sum_base_dir + '/models'
     if not os.path.exists(models_dir):
@@ -200,5 +201,11 @@ def test(
             forw_loss = 0
             curiosity_loss = 0
             actions.clear()
+
+            if count_done >= args.max_episodes:
+                for pid in pids:
+                    os.kill(pid, signal.SIGKILL)
+                os.kill(os.getpid(), signal.SIGKILL)
+
             count_done += 1
             time.sleep(args.time_sleep)

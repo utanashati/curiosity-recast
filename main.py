@@ -69,7 +69,9 @@ parser.add_argument('--eta', type=float, default=0.01,
 parser.add_argument('--beta', type=float, default=0.2,
                     help='curiosity_loss = (1 - args.beta) * inv_loss + args.beta * forw_loss')
 parser.add_argument('--lambda-1', type=float, default=10,
-                    help='1 / lambda from the paper.')
+                    help='1 / lambda from the paper')
+parser.add_argument('--max-episodes', type=int, default=1000,
+                    help='finish after _ episodes.')
 
 
 def setup_loggings(args):
@@ -119,13 +121,15 @@ if __name__ == '__main__':
 
     processes = []
 
+    manager = mp.Manager()
+    pids = manager.list([])
     counter = mp.Value('i', 0)
     lock = mp.Lock()
 
     p = mp.Process(
         target=test, args=(
             args.num_processes, args, shared_model, shared_curiosity,
-            counter, optimizer))
+            counter, pids, optimizer))
     p.start()
     processes.append(p)
 
@@ -139,7 +143,7 @@ if __name__ == '__main__':
             target=train_foo,
             args=(
                 rank, args, shared_model, shared_curiosity,
-                counter, lock, optimizer))
+                counter, lock, pids, optimizer))
         p.start()
         processes.append(p)
     for p in processes:
