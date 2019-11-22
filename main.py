@@ -71,7 +71,9 @@ parser.add_argument('--beta', type=float, default=0.2,
 parser.add_argument('--lambda-1', type=float, default=10,
                     help='1 / lambda from the paper')
 parser.add_argument('--max-episodes', type=int, default=1000,
-                    help='finish after _ episodes.')
+                    help='finish after _ episodes')
+parser.add_argument('--random-seed', dest='random_seed', action='store_true', default=False,
+                    help='random seed [0, 1000].')
 
 
 def setup_loggings(args):
@@ -98,7 +100,12 @@ if __name__ == '__main__':
 
     setup_loggings(args)
 
-    torch.manual_seed(args.seed)
+    if args.random_seed:
+        random_seed = torch.randint(0, 1000, (1,))
+        logging.info(f"Seed: {int(random_seed)}")
+        torch.manual_seed(random_seed)
+    else:
+        torch.manual_seed(args.seed)
     env = create_atari_env(args.env_name)
     shared_model = ActorCritic(
         env.observation_space.shape[0], env.action_space)
