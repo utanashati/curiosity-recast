@@ -18,11 +18,11 @@ def test(
     rank, args, shared_model, shared_curiosity,
     counter, pids, optimizer
 ):
-    models_dir = args.sum_base_dir + '/models'
+    models_dir = os.path.join(args.sum_base_dir, 'models')
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
 
-    recordings_dir = args.sum_base_dir + '/recordings'
+    recordings_dir = os.path.join(args.sum_base_dir, 'recordings')
     if (not os.path.exists(recordings_dir)) and (args.game == 'doom'):
         print("Created recordings dir")
         os.makedirs(recordings_dir)
@@ -225,7 +225,7 @@ def test(
 
             if count_done >= args.max_episodes:
                 for pid in pids:
-                    os.kill(pid, signal.SIGKILL)
+                    os.kill(pid, signal.SIGTERM)
                 env.close()
                 os.kill(os.getpid(), signal.SIGKILL)
 

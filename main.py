@@ -79,7 +79,11 @@ parser.add_argument('--random-seed', dest='random_seed', action='store_true', de
 parser.add_argument('--no-curiosity', dest='no_curiosity', action='store_true', default=False,
                     help='run without curiosity')
 parser.add_argument('--game', type=str, default='atari',
-                    help='game mode.')
+                    help='game mode')
+
+parser.add_argument('--model-file', type=str, default=None)
+parser.add_argument('--curiosity-file', type=str, default=None)
+parser.add_argument('--optimizer-file', type=str, default=None)
 
 
 def setup_loggings(args):
@@ -139,6 +143,14 @@ if __name__ == '__main__':
             chain(shared_model.parameters(), shared_curiosity.parameters()),
             lr=args.lr)
         optimizer.share_memory()
+
+    if (args.model_file is not None) and \
+        (args.curiosity_file is not None) and \
+        (args.optimizer_file is not None):
+        logging.info("Start with a pretrained model")
+        shared_model.load_state_dict(torch.load(args.model_file))
+        shared_curiosity.load_state_dict(torch.load(args.curiosity_file))
+        optimizer.load_state_dict(torch.load(args.optimizer_file))
 
     processes = []
 
