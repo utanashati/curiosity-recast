@@ -85,6 +85,9 @@ parser.add_argument('--model-file', type=str, default=None)
 parser.add_argument('--curiosity-file', type=str, default=None)
 parser.add_argument('--optimizer-file', type=str, default=None)
 
+parser.add_argument('--num-skip', type=int, default=4)
+parser.add_argument('--num-stack', type=int, default=4)
+
 
 def setup_loggings(args):
     # current_path = os.path.dirname(os.path.realpath(__file__))
@@ -119,19 +122,23 @@ if __name__ == '__main__':
         torch.manual_seed(args.seed)
 
     if args.game == 'doom':
-        env = create_doom_env(args.env_name, 0)
+        env = create_doom_env(
+            args.env_name, 0,
+            num_skip=args.num_skip, num_stack=args.num_stack)
     elif args.game == 'atari':
         env = create_atari_env(args.env_name)
     else:
         raise ValueError("Choose game between 'doom' and 'atari'.")
 
     shared_model = ActorCritic(
-        env.observation_space.shape[0], env.action_space)
+        # env.observation_space.shape[0], env.action_space)
+        args.num_stack, env.action_space)
     shared_model.share_memory()
 
     #<---ICM---
     shared_curiosity = IntrinsicCuriosityModule(
-        env.observation_space.shape[0], env.action_space)
+        # env.observation_space.shape[0], env.action_space)
+        args.num_stack, env.action_space)
     shared_curiosity.share_memory()
     #---ICM--->
 

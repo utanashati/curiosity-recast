@@ -24,7 +24,7 @@ def test(
 
     recordings_dir = os.path.join(args.sum_base_dir, 'recordings')
     if (not os.path.exists(recordings_dir)) and (args.game == 'doom'):
-        print("Created recordings dir")
+        logging.info("Created recordings dir")
         os.makedirs(recordings_dir)
 
     videos_dir = args.sum_base_dir + '/videos'
@@ -34,7 +34,9 @@ def test(
     torch.manual_seed(args.seed + rank)
 
     if args.game == 'doom':
-        env = create_doom_env(args.env_name, rank)
+        env = create_doom_env(
+            args.env_name, rank,
+            num_skip=args.num_skip, num_stack=args.num_stack)
         env.set_recordings_dir(recordings_dir)
         logging.info("Set recordings dir")
         env.seed(args.seed + rank)
@@ -46,10 +48,12 @@ def test(
     env.step(0)
 
     model = ActorCritic(
-        env.observation_space.shape[0],
+        # env.observation_space.shape[0],
+        args.num_stack,
         env.action_space)
     curiosity = IntrinsicCuriosityModule(  # ICM
-        env.observation_space.shape[0],
+        # env.observation_space.shape[0],
+        args.num_stack,
         env.action_space)
 
     model.eval()

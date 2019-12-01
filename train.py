@@ -38,14 +38,20 @@ def train(
     torch.manual_seed(args.seed + rank)
 
     if args.game == 'doom':
-        env = create_doom_env(args.env_name, rank)
+        env = create_doom_env(
+            args.env_name, rank,
+            num_skip=args.num_skip, num_stack=args.num_stack)
     elif args.game == 'atari':
         env = create_atari_env(args.env_name)
     env.seed(args.seed + rank)
 
-    model = ActorCritic(env.observation_space.shape[0], env.action_space)
+    model = ActorCritic(
+        # env.observation_space.shape[0],
+        args.num_stack,
+        env.action_space)
     curiosity = IntrinsicCuriosityModule(  # ICM
-        env.observation_space.shape[0],
+        # env.observation_space.shape[0],
+        args.num_stack,
         env.action_space)
 
     if optimizer is None:
