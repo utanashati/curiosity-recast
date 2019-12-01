@@ -78,16 +78,16 @@ class VizdoomEnv(gym.Env):
         img = self.state.screen_buffer
         return np.transpose(img, (1, 2, 0))
 
-    def render(self, mode='human'):
-        try:
-            img = self.game.get_state().screen_buffer
-            img = np.transpose(img, [1, 2, 0])
+    # def render(self, mode='human'):
+    #     try:
+    #         img = self.game.get_state().screen_buffer
+    #         img = np.transpose(img, [1, 2, 0])
 
-            if self.viewer is None:
-                self.viewer = rendering.SimpleImageViewer()
-            self.viewer.imshow(img)
-        except AttributeError:
-            pass
+    #         if self.viewer is None:
+    #             self.viewer = rendering.SimpleImageViewer()
+    #         self.viewer.imshow(img)
+    #     except AttributeError:
+    #         pass
 
     def close(self):
         self.game.close()
