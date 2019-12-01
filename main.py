@@ -8,7 +8,7 @@ import torch
 import torch.multiprocessing as mp
 
 import my_optim
-from envs import create_atari_env
+from envs import create_atari_env, create_doom_env
 from model import ActorCritic, IntrinsicCuriosityModule
 from test import test
 from test_no_curiosity import test_no_curiosity
@@ -77,12 +77,15 @@ parser.add_argument('--max-episodes', type=int, default=1000,
 parser.add_argument('--random-seed', dest='random_seed', action='store_true', default=False,
                     help='random seed [0, 1000]')
 parser.add_argument('--no-curiosity', dest='no_curiosity', action='store_true', default=False,
-                    help='run without curiosity.')
+                    help='run without curiosity')
+parser.add_argument('--game', type=str, default='atari',
+                    help='game mode.')
 
 
 def setup_loggings(args):
-    current_path = os.path.dirname(os.path.realpath(__file__))
-    args.sum_base_dir = (current_path + '/runs/{}/{}({})').format(
+    # current_path = os.path.dirname(os.path.realpath(__file__))
+    # args.sum_base_dir = (current_path + '/runs/{}/{}({})').format(
+    args.sum_base_dir = ('runs/{}/{}({})').format(
         args.env_name, time.strftime('%Y.%m.%d-%H.%M'), args.short_description)
 
     if not os.path.exists(args.sum_base_dir):
@@ -110,7 +113,14 @@ if __name__ == '__main__':
         torch.manual_seed(random_seed)
     else:
         torch.manual_seed(args.seed)
-    env = create_atari_env(args.env_name)
+
+    if args.game == 'doom':
+        env = create_doom_env(args.env_name, 0)
+    elif args.game == 'atari':
+        env = create_atari_env(args.env_name)
+    else:
+        raise ValueError("Choose game between 'doom' and 'atari'.")
+
     shared_model = ActorCritic(
         env.observation_space.shape[0], env.action_space)
     shared_model.share_memory()
@@ -140,7 +150,7 @@ if __name__ == '__main__':
     train_foo = train
     test_foo = test
     args_test = (
-        args.num_processes, args, shared_model, shared_curiosity,
+        0, args, shared_model, shared_curiosity,
         counter, pids, optimizer)
 
     if args.lock:
@@ -150,17 +160,15 @@ if __name__ == '__main__':
         train_foo = train_no_curiosity
         test_foo = test_no_curiosity
         args_test = (
-            args.num_processes, args, shared_model,
+            0, args, shared_model,
             counter, pids, optimizer)
 
     p = mp.Process(
-        target=test_foo, args=(
-            args.num_processes, args, shared_model, shared_curiosity,
-            counter, pids, optimizer))
+        target=test_foo, args=args_test)
     p.start()
     processes.append(p)
 
-    for rank in range(0, args.num_processes):
+    for rank in range(1, args.num_processes + 1):
         if args.no_curiosity:
             args_train = (
                 rank, args, shared_model,

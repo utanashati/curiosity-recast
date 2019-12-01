@@ -1,5 +1,6 @@
-__pycache__
+*__pycache__
 *.pyc
 runs
-rl.log
 wrapper_test.py
+*_vizdoom.ini
+gym/vizdoomgym/vizdoomgym.egg-info

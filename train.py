@@ -2,12 +2,23 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from envs import create_atari_env
+from envs import create_atari_env, create_doom_env
 from model import ActorCritic, IntrinsicCuriosityModule
 
 from itertools import chain  # ICM
 
 import os
+import signal
+
+
+class Killer:
+    kill_now = False
+
+    def __init__(self):
+        signal.signal(signal.SIGKILL, self.exit)
+
+    def exit(self, signum, frame):
+        self.kill_now = True
 
 
 def ensure_shared_grads(model, shared_model):
@@ -26,7 +37,10 @@ def train(
 
     torch.manual_seed(args.seed + rank)
 
-    env = create_atari_env(args.env_name)
+    if args.game == 'doom':
+        env = create_doom_env(args.env_name, rank)
+    elif args.game == 'atari':
+        env = create_atari_env(args.env_name)
     env.seed(args.seed + rank)
 
     model = ActorCritic(env.observation_space.shape[0], env.action_space)
@@ -48,7 +62,9 @@ def train(
     done = True
 
     episode_length = 0
-    while True:
+
+    killer = Killer()
+    while not killer.kill_now:
         # Sync with the shared model
         model.load_state_dict(shared_model.state_dict())
         curiosity.load_state_dict(shared_curiosity.state_dict())  # ICM
@@ -168,3 +184,5 @@ def train(
         ensure_shared_grads(model, shared_model)
         ensure_shared_grads(curiosity, shared_curiosity)
         optimizer.step()
+
+    env.close()

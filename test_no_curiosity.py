@@ -4,7 +4,7 @@ from collections import deque
 import torch
 import torch.nn.functional as F
 
-from envs import create_atari_env
+from envs import create_atari_env, create_doom_env
 from model import ActorCritic
 
 import tensorboard_logger as tb
@@ -28,7 +28,10 @@ def test_no_curiosity(
 
     torch.manual_seed(args.seed + rank)
 
-    env_to_wrap = create_atari_env(args.env_name)
+    if args.game == 'doom':
+        env_to_wrap = create_doom_env(args.env_name, rank)
+    elif args.game == 'atari':
+        env_to_wrap = create_atari_env(args.env_name)
     env_to_wrap.seed(args.seed + rank)
 
     model = ActorCritic(

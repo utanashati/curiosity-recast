@@ -4,7 +4,7 @@ from collections import deque
 import torch
 import torch.nn.functional as F
 
-from envs import create_atari_env
+from envs import create_atari_env, create_doom_env
 from model import ActorCritic, IntrinsicCuriosityModule
 
 import tensorboard_logger as tb
@@ -22,21 +22,35 @@ def test(
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
 
+    recordings_dir = args.sum_base_dir + '/recordings'
+    if (not os.path.exists(recordings_dir)) and (args.game == 'doom'):
+        print("Created recordings dir")
+        os.makedirs(recordings_dir)
+
     videos_dir = args.sum_base_dir + '/videos'
-    if not os.path.exists(videos_dir):
+    if (not os.path.exists(videos_dir)) and (args.game == 'atari'):
         os.makedirs(videos_dir)
 
     torch.manual_seed(args.seed + rank)
 
-    env_to_wrap = create_atari_env(args.env_name)
-    env_to_wrap.seed(args.seed + rank)
+    if args.game == 'doom':
+        env = create_doom_env(args.env_name, rank)
+        env.set_recordings_dir(recordings_dir)
+        logging.info("Set recordings dir")
+        env.seed(args.seed + rank)
+    elif args.game == 'atari':
+        env_to_wrap = create_atari_env(args.env_name)
+        env_to_wrap.seed(args.seed + rank)
+        env = env_to_wrap
+
+    env.step(0)
 
     model = ActorCritic(
-        env_to_wrap.observation_space.shape[0],
-        env_to_wrap.action_space)
+        env.observation_space.shape[0],
+        env.action_space)
     curiosity = IntrinsicCuriosityModule(  # ICM
-        env_to_wrap.observation_space.shape[0],
-        env_to_wrap.action_space)
+        env.observation_space.shape[0],
+        env.action_space)
 
     model.eval()
     curiosity.eval()  # ICM
@@ -52,6 +66,9 @@ def test(
     count_done = 0
 
     start_time = time.time()
+
+    passed_time = 0
+    current_counter = 0
 
     # a quick hack to prevent the agent from stucking
     actions = deque(maxlen=100)
@@ -70,17 +87,22 @@ def test(
             hx = torch.zeros(1, 256)
 
             if count_done % args.save_video_again_eps == 0:
-                video_dir = os.path.join(
-                    videos_dir,
-                    'video_' +
-                    time.strftime('%Y.%m.%d-%H.%M.%S_') +
-                    str(current_counter))
-                if not os.path.exists(video_dir):
-                    os.makedirs(video_dir)
-                logging.info("Created new video dir")
+                if args.game == 'atari':
+                    video_dir = os.path.join(
+                        videos_dir,
+                        'video_' +
+                        time.strftime('%Y.%m.%d-%H.%M.%S_') +
+                        str(current_counter))
+                    if not os.path.exists(video_dir):
+                        os.makedirs(video_dir)
+                    logging.info("Created new video dir")
 
-                env = wrappers.Monitor(env_to_wrap, video_dir, force=False)
-                logging.info("Created new wrapper")
+                    env = wrappers.Monitor(env_to_wrap, video_dir, force=False)
+                    logging.info("Created new wrapper")
+                elif args.game == 'doom':
+                    env.set_current_counter(current_counter)
+                    env.set_record()
+                    logging.info("Set new recording")
 
             state = env.reset()
             state = torch.from_numpy(state)
@@ -187,8 +209,9 @@ def test(
             tb.log_value('loss_forw', forw_loss, current_counter)
             tb.log_value('loss_curiosity', curiosity_loss, current_counter)
 
-            env.close()  # Close the window after the rendering session
-            env_to_wrap.close()
+            if args.game == 'atari':
+                env.close()  # Close the window after the rendering session
+                env_to_wrap.close()
             logging.info("Episode done, close all")
 
             external_reward_sum = 0
@@ -203,6 +226,7 @@ def test(
             if count_done >= args.max_episodes:
                 for pid in pids:
                     os.kill(pid, signal.SIGKILL)
+                env.close()
                 os.kill(os.getpid(), signal.SIGKILL)
 
             count_done += 1
