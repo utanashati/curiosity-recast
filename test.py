@@ -75,7 +75,7 @@ def test(
     current_counter = 0
 
     # a quick hack to prevent the agent from stucking
-    actions = deque(maxlen=100)
+    # actions = deque(maxlen=100)
     episode_length = 0
     while True:
         episode_length += 1
