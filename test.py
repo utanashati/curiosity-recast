@@ -76,6 +76,7 @@ def test(
 
     # a quick hack to prevent the agent from stucking
     # actions = deque(maxlen=100)
+    actions = deque(maxlen=args.max_episode_length_test)
     episode_length = 0
     while True:
         episode_length += 1

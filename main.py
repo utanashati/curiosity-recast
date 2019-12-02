@@ -112,6 +112,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    if args.game == 'doom':
+        args.max_episode_length = 2100
+        args.max_episode_length_test = 2100
+    else:
+        args.max_episode_length_test = 100
+
     setup_loggings(args)
 
     if args.random_seed:
