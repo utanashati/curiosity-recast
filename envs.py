@@ -35,7 +35,8 @@ def create_doom_env(env_id, rank, envWrap=True,
         if noLifeReward:
             env = env_wrapper.NoNegativeRewardEnv(env)
         env = PreprocessFrames(env, num_skip=num_skip)
-        env = StackFrames(env, num_stack=num_stack)
+        if num_stack > 1:
+            env = StackFrames(env, num_stack=num_stack)
     elif noLifeReward:
         env = env_wrapper.NoNegativeRewardEnv(env)
 
