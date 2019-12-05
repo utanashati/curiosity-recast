@@ -31,7 +31,8 @@ def ensure_shared_grads(model, shared_model):
 
 def train(
     rank, args, shared_model, shared_curiosity,
-    counter, lock, pids, optimizer=None
+    counter, lock, pids, optimizer, train_policy_losses,
+    train_value_losses, train_rewards
 ):
     pids.append(os.getpid())
 
@@ -90,7 +91,12 @@ def train(
         forw_loss = 0  # ICM
 
         for step in range(args.num_steps):
+            if done:
+                episode_length = 0
+                state = env.reset()
+                state = torch.from_numpy(state)
             episode_length += 1
+
             value, logit, (hx, cx) = model((state.unsqueeze(0),
                                             (hx, cx)))
             prob = F.softmax(logit, dim=-1)
@@ -104,7 +110,7 @@ def train(
             state_old = state  # ICM
 
             state, external_reward, done, _ = env.step(action.numpy())
-            state = torch.from_numpy(state)  # Moved for ICM
+            state = torch.from_numpy(state)
 
             # external reward = 0 if ICM-only mode
             external_reward = external_reward * (1 - args.icm_only)
@@ -122,7 +128,6 @@ def train(
             # self.forwardloss = self.forwardloss * 288.0 # lenFeatures=288. Factored out to make hyperparams not depend on it.
             prob_curiosity = F.softmax(inv_out, dim=-1)
             log_prob_curiosity = F.log_softmax(logit.detach(), dim=-1)
-
             inv_loss += -(log_prob_curiosity * prob_curiosity).sum(
                 1, keepdim=True)
             forw_loss += curiosity_reward
@@ -138,11 +143,6 @@ def train(
             with lock:
                 counter.value += 1
 
-            if done:
-                episode_length = 0
-                state = env.reset()
-                state = torch.from_numpy(state)  # ICM
-
             values.append(value)
             log_probs.append(log_prob)
             rewards.append(reward)
@@ -150,9 +150,11 @@ def train(
             if done:
                 break
 
+        train_rewards[rank - 1] = sum(rewards)
+
         # <---ICM---
-        inv_loss = inv_loss / args.num_steps
-        forw_loss = forw_loss * (32 * 3 * 3) * 0.5 / args.num_steps
+        inv_loss = inv_loss / episode_length
+        forw_loss = forw_loss * (32 * 3 * 3) * 0.5 / episode_length
 
         curiosity_loss = args.lambda_1 * (
             (1 - args.beta) * inv_loss + args.beta * forw_loss)
@@ -181,6 +183,9 @@ def train(
                 log_probs[i] * gae.detach() - args.entropy_coef * entropies[i]
 
         optimizer.zero_grad()
+
+        train_policy_losses[rank - 1] = float((policy_loss).detach().item())
+        train_value_losses[rank - 1] = float((value_loss).detach().item())
 
         (policy_loss + args.value_loss_coef * value_loss +
             curiosity_loss).backward()  # ICM

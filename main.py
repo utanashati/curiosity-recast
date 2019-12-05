@@ -80,6 +80,8 @@ parser.add_argument('--no-curiosity', dest='no_curiosity', action='store_true', 
                     help='run without curiosity')
 parser.add_argument('--game', type=str, default='atari',
                     help='game mode')
+parser.add_argument('--mex-test-runs', type=int, default=3,
+                    help='maximal number of runs per test')
 
 parser.add_argument('--model-file', type=str, default=None)
 parser.add_argument('--curiosity-file', type=str, default=None)
@@ -141,25 +143,28 @@ if __name__ == '__main__':
         args.num_stack, env.action_space)
     shared_model.share_memory()
 
-    #<---ICM---
-    shared_curiosity = IntrinsicCuriosityModule(
-        # env.observation_space.shape[0], env.action_space)
-        args.num_stack, env.action_space)
-    shared_curiosity.share_memory()
-    #---ICM--->
+    if not args.no_curiosity:
+        # <---ICM---
+        shared_curiosity = IntrinsicCuriosityModule(
+            # env.observation_space.shape[0], env.action_space)
+            args.num_stack, env.action_space)
+        shared_curiosity.share_memory()
+        # ---ICM--->
 
     if args.no_shared:
         optimizer = None
     else:
-        # optimizer = my_optim.SharedAdam(shared_model.parameters(), lr=args.lr)
-        optimizer = my_optim.SharedAdam(  # ICM
-            chain(shared_model.parameters(), shared_curiosity.parameters()),
-            lr=args.lr)
+        if not args.no_curiosity:
+            optimizer = my_optim.SharedAdam(  # ICM
+                chain(shared_model.parameters(), shared_curiosity.parameters()),
+                lr=args.lr)
+        else:
+            optimizer = my_optim.SharedAdam(shared_model.parameters(), lr=args.lr)
         optimizer.share_memory()
 
     if (args.model_file is not None) and \
         (args.curiosity_file is not None) and \
-        (args.optimizer_file is not None):
+            (args.optimizer_file is not None):
         logging.info("Start with a pretrained model")
         shared_model.load_state_dict(torch.load(args.model_file))
         shared_curiosity.load_state_dict(torch.load(args.curiosity_file))
@@ -169,24 +174,30 @@ if __name__ == '__main__':
 
     manager = mp.Manager()
     pids = manager.list([])
+    train_policy_losses = manager.list([0] * args.num_processes)
+    train_value_losses = manager.list([0] * args.num_processes)
+    train_rewards = manager.list([0] * args.num_processes)
     counter = mp.Value('i', 0)
     lock = mp.Lock()
 
-    train_foo = train
-    test_foo = test
-    args_test = (
-        0, args, shared_model, shared_curiosity,
-        counter, pids, optimizer)
-
     if args.lock:
         train_foo = train_lock
+    elif not args.no_curiosity:
+        logging.info("Train WITH curiosity")
+        train_foo = train
+        test_foo = test
+        args_test = (
+            0, args, shared_model, shared_curiosity,
+            counter, pids, optimizer, train_policy_losses,
+            train_value_losses, train_rewards)
     elif args.no_curiosity:
-        logging.info("Train without curiosity")
+        logging.info("Train WITHOUT curiosity")
         train_foo = train_no_curiosity
         test_foo = test_no_curiosity
         args_test = (
             0, args, shared_model,
-            counter, pids, optimizer)
+            counter, pids, optimizer, train_policy_losses,
+            train_value_losses, train_rewards)
 
     p = mp.Process(
         target=test_foo, args=args_test)
@@ -197,11 +208,13 @@ if __name__ == '__main__':
         if args.no_curiosity:
             args_train = (
                 rank, args, shared_model,
-                counter, lock, pids, optimizer)
+                counter, lock, pids, optimizer, train_policy_losses,
+                train_value_losses, train_rewards)
         else:
             args_train = (
                 rank, args, shared_model, shared_curiosity,
-                counter, lock, pids, optimizer)
+                counter, lock, pids, optimizer, train_policy_losses,
+                train_value_losses, train_rewards)
         p = mp.Process(
             target=train_foo,
             args=args_train)

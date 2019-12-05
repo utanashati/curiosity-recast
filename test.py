@@ -16,7 +16,8 @@ from gym import wrappers
 
 def test(
     rank, args, shared_model, shared_curiosity,
-    counter, pids, optimizer
+    counter, pids, optimizer, train_policy_losses,
+    train_value_losses, train_rewards
 ):
     models_dir = os.path.join(args.sum_base_dir, 'models')
     if not os.path.exists(models_dir):
@@ -60,11 +61,11 @@ def test(
     curiosity.eval()  # ICM
 
     external_reward_sum = 0
-    curiosity_reward_sum = 0
-    curiosity_reward_sum_clipped = 0
-    inv_loss = 0
-    forw_loss = 0
-    curiosity_loss = 0
+    curiosity_reward_sum = 0          # ICM
+    curiosity_reward_sum_clipped = 0  # ICM
+    inv_loss = 0        # ICM
+    forw_loss = 0       # ICM
+    curiosity_loss = 0  # ICM
     done = True
 
     count_done = 0
@@ -87,7 +88,7 @@ def test(
             current_counter = counter.value
 
             model.load_state_dict(shared_model.state_dict())
-            curiosity.load_state_dict(shared_curiosity.state_dict())
+            curiosity.load_state_dict(shared_curiosity.state_dict())  # ICM
             cx = torch.zeros(1, 256)
             hx = torch.zeros(1, 256)
 
@@ -101,7 +102,6 @@ def test(
                     if not os.path.exists(video_dir):
                         os.makedirs(video_dir)
                     logging.info("Created new video dir")
-
                     env = wrappers.Monitor(env_to_wrap, video_dir, force=False)
                     logging.info("Created new wrapper")
                 elif args.game == 'doom':
@@ -127,6 +127,7 @@ def test(
 
         # external reward = 0 if ICM-only mode
         external_reward = external_reward * (1 - args.icm_only)
+        external_reward_sum += external_reward
 
         # <---ICM---
         inv_out, forw_out, curiosity_reward = \
@@ -149,8 +150,6 @@ def test(
         curiosity_reward_sum += curiosity_reward.detach()
         curiosity_reward_sum_clipped += \
             max(min(curiosity_reward.detach(), args.clip), -args.clip)
-
-        external_reward_sum += external_reward
         # ---ICM--->
 
         done = done or episode_length >= args.max_episode_length
@@ -169,17 +168,26 @@ def test(
                 (1 - args.beta) * inv_loss + args.beta * forw_loss)
             # ---ICM--->
 
+            train_policy_loss_mean = sum(train_policy_losses) / \
+                len(train_policy_losses)
+            train_value_loss_mean = sum(train_value_losses) / \
+                len(train_value_losses)
+            train_rewards_mean = sum(train_rewards) / \
+                len(train_rewards)
             logging.info(
                 "\n\nEp {:3d}: time {}, num steps {}, FPS {:.0f}, len {},\n"
-                "        total R {}, curiosity R {:.2f}, curiosity R clipped {:.2f},\n"
+                "        total R {}, train policy loss {:.3f}, train value loss {:.3f},\n"
+                "        train mean R {}, curiosity R {:.2f}, curiosity R clipped {:.2f},\n"
                 "        inv loss {:.3f}, forw loss {:.3f}, curiosity loss {:.2f}.\n"
                 "".format(
                     count_done,
                     time.strftime("%Hh %Mm %Ss",
                                   time.gmtime(passed_time)),
                     current_counter, current_counter / passed_time,
-                    episode_length, external_reward_sum, curiosity_reward_sum,
-                    curiosity_reward_sum_clipped,
+                    episode_length,
+                    external_reward_sum, train_policy_loss_mean,
+                    train_value_loss_mean, train_rewards_mean,
+                    curiosity_reward_sum, curiosity_reward_sum_clipped,
                     inv_loss, forw_loss, curiosity_loss))
 
             if (
@@ -213,19 +221,28 @@ def test(
             tb.log_value('loss_inv', inv_loss, current_counter)
             tb.log_value('loss_forw', forw_loss, current_counter)
             tb.log_value('loss_curiosity', curiosity_loss, current_counter)
+            tb.log_value(
+                'loss_train_policy_mean', train_policy_loss_mean,
+                current_counter)
+            tb.log_value(
+                'loss_train_value_mean', train_value_loss_mean,
+                current_counter)
+            tb.log_value(
+                'reward_train_mean', train_value_loss_mean,
+                current_counter)
 
             if args.game == 'atari':
                 env.close()  # Close the window after the rendering session
                 env_to_wrap.close()
             logging.info("Episode done, close all")
 
-            external_reward_sum = 0
-            curiosity_reward_sum = 0
-            curiosity_reward_sum_clipped = 0
             episode_length = 0
-            inv_loss = 0
-            forw_loss = 0
-            curiosity_loss = 0
+            external_reward_sum = 0
+            curiosity_reward_sum = 0          # ICM
+            curiosity_reward_sum_clipped = 0  # ICM 
+            inv_loss = 0        # ICM
+            forw_loss = 0       # ICM
+            curiosity_loss = 0  # ICM
             actions.clear()
 
             if count_done >= args.max_episodes:
