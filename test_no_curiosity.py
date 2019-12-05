@@ -123,17 +123,17 @@ def test_no_curiosity(
         if actions.count(actions[0]) == actions.maxlen:
             done = True
 
-        train_policy_loss_mean = sum(train_policy_losses) / \
-            len(train_policy_losses)
-        train_value_loss_mean = sum(train_value_losses) / \
-            len(train_value_losses)
-        train_rewards_mean = sum(train_rewards) / \
-            len(train_rewards)
         if done:
+            train_policy_loss_mean = sum(train_policy_losses) / \
+                len(train_policy_losses)
+            train_value_loss_mean = sum(train_value_losses) / \
+                len(train_value_losses)
+            train_rewards_mean = sum(train_rewards) / \
+                len(train_rewards)
             logging.info(
                 "\n\nEp {:3d}: time {}, num steps {}, FPS {:.0f}, len {},\n"
-                "        total R {}, train policy loss {:.3f}, train value loss {:.3f},\n"
-                "        train rewards {}.\n"
+                "        total R {:.6f}, train policy loss {:.6f}, train value loss {:.6f},\n"
+                "        train rewards {:.6f}.\n"
                 "".format(
                     count_done,
                     time.strftime("%Hh %Mm %Ss",

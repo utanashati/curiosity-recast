@@ -80,8 +80,6 @@ parser.add_argument('--no-curiosity', dest='no_curiosity', action='store_true', 
                     help='run without curiosity')
 parser.add_argument('--game', type=str, default='atari',
                     help='game mode')
-parser.add_argument('--mex-test-runs', type=int, default=3,
-                    help='maximal number of runs per test')
 
 parser.add_argument('--model-file', type=str, default=None)
 parser.add_argument('--curiosity-file', type=str, default=None)

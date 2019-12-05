@@ -176,9 +176,9 @@ def test(
                 len(train_rewards)
             logging.info(
                 "\n\nEp {:3d}: time {}, num steps {}, FPS {:.0f}, len {},\n"
-                "        total R {}, train policy loss {:.3f}, train value loss {:.3f},\n"
-                "        train mean R {}, curiosity R {:.2f}, curiosity R clipped {:.2f},\n"
-                "        inv loss {:.3f}, forw loss {:.3f}, curiosity loss {:.2f}.\n"
+                "        total R {:.6f}, train policy loss {:.6f}, train value loss {:.6f},\n"
+                "        train mean R {:.6f}, curiosity R {:.3f}, curiosity R clipped {:.3f},\n"
+                "        inv loss {:.3f}, forw loss {:.3f}, curiosity loss {:.3f}.\n"
                 "".format(
                     count_done,
                     time.strftime("%Hh %Mm %Ss",

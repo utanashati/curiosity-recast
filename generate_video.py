@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_file", "-c", default="gym/vizdoomgym/"
         "vizdoomgym/envs/scenarios/my_way_home_dense.cfg")
-    parser.add_argument("--player", "-p", type=int, default=1)
+    # parser.add_argument("--player", "-p", type=int, default=-1)
     parser.add_argument("--title", "-t", type=str, default="title")
     parser.add_argument("--subtitle", "-s", type=str, default="subtitle")
     # parser.add_argument("--output_dir", "-o", default=None)
@@ -79,8 +79,8 @@ if __name__ == "__main__":
     parser.add_argument("--resources_dir", default="resources")
     parser.add_argument("--fps", "-fps", default=20, type=int)
     parser.add_argument("--resolution", default="RES_640X360")
-    parser.add_argument("--max_frames", default=None, type=int)
-    parser.add_argument("--show_progress_bar", action="store_true", default=False)
+    parser.add_argument("--max_frames", default=2100, type=int)
+    parser.add_argument("--show_progress_bar", action="store_true", default=True)
 
     args = parser.parse_args()
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     for recording_file, output_file in zip(recording_files, output_files):
         video_name = os.path.join(output_dir, output_file)
-        game.replay_episode(os.path.join(recordings_dir, recording_file), args.player)
+        game.replay_episode(os.path.join(recordings_dir, recording_file))
 
         screen_channels = game.get_screen_channels()
         frame_width = game.get_screen_width()
@@ -206,7 +206,7 @@ if __name__ == "__main__":
             if args.show_progress_bar:
                 progress_bar.update(1)
             else:
-                print("Saved frame {:06d}".format(frame_count))
+                pass  # print("Saved frame {:06d}".format(frame_count))
 
             if args.max_frames is not None and frame_count > int(args.max_frames):
                 break
