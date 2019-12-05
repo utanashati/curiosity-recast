@@ -15,28 +15,43 @@ from gym import wrappers
 
 
 def test_no_curiosity(
-    rank, args, shared_model, shared_curiosity,
-    counter, pids, optimizer
+    rank, args, shared_model,
+    counter, pids, optimizer, train_policy_losses,
+    train_value_losses, train_rewards
 ):
-    models_dir = args.sum_base_dir + '/models'
+    models_dir = os.path.join(args.sum_base_dir, 'models')
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
 
+    recordings_dir = os.path.join(args.sum_base_dir, 'recordings')
+    if (not os.path.exists(recordings_dir)) and (args.game == 'doom'):
+        logging.info("Created recordings dir")
+        os.makedirs(recordings_dir)
+
     videos_dir = args.sum_base_dir + '/videos'
-    if not os.path.exists(videos_dir):
+    if (not os.path.exists(videos_dir)) and (args.game == 'atari'):
         os.makedirs(videos_dir)
 
     torch.manual_seed(args.seed + rank)
 
     if args.game == 'doom':
-        env_to_wrap = create_doom_env(args.env_name, rank)
+        env = create_doom_env(
+            args.env_name, rank,
+            num_skip=args.num_skip, num_stack=args.num_stack)
+        env.set_recordings_dir(recordings_dir)
+        logging.info("Set recordings dir")
+        env.seed(args.seed + rank)
     elif args.game == 'atari':
         env_to_wrap = create_atari_env(args.env_name)
-    env_to_wrap.seed(args.seed + rank)
+        env_to_wrap.seed(args.seed + rank)
+        env = env_to_wrap
+
+    env.step(0)
 
     model = ActorCritic(
-        env_to_wrap.observation_space.shape[0],
-        env_to_wrap.action_space)
+        # env.observation_space.shape[0],
+        args.num_stack,
+        env.action_space)
 
     model.eval()
 
@@ -47,8 +62,12 @@ def test_no_curiosity(
 
     start_time = time.time()
 
+    passed_time = 0
+    current_counter = 0
+
     # a quick hack to prevent the agent from stucking
-    actions = deque(maxlen=100)
+    # actions = deque(maxlen=100)
+    actions = deque(maxlen=args.max_episode_length_test)
     episode_length = 0
     while True:
         episode_length += 1
@@ -63,17 +82,21 @@ def test_no_curiosity(
             hx = torch.zeros(1, 256)
 
             if count_done % args.save_video_again_eps == 0:
-                video_dir = os.path.join(
-                    videos_dir,
-                    'video_' +
-                    time.strftime('%Y.%m.%d-%H.%M.%S_') +
-                    str(current_counter))
-                if not os.path.exists(video_dir):
-                    os.makedirs(video_dir)
-                logging.info("Created new video dir")
-
-                env = wrappers.Monitor(env_to_wrap, video_dir, force=False)
-                logging.info("Created new wrapper")
+                if args.game == 'atari':
+                    video_dir = os.path.join(
+                        videos_dir,
+                        'video_' +
+                        time.strftime('%Y.%m.%d-%H.%M.%S_') +
+                        str(current_counter))
+                    if not os.path.exists(video_dir):
+                        os.makedirs(video_dir)
+                    logging.info("Created new video dir")
+                    env = wrappers.Monitor(env_to_wrap, video_dir, force=False)
+                    logging.info("Created new wrapper")
+                elif args.game == 'doom':
+                    env.set_current_counter(current_counter)
+                    env.set_record()
+                    logging.info("Set new recording")
 
             state = env.reset()
             state = torch.from_numpy(state)
@@ -100,15 +123,25 @@ def test_no_curiosity(
         if actions.count(actions[0]) == actions.maxlen:
             done = True
 
+        train_policy_loss_mean = sum(train_policy_losses) / \
+            len(train_policy_losses)
+        train_value_loss_mean = sum(train_value_losses) / \
+            len(train_value_losses)
+        train_rewards_mean = sum(train_rewards) / \
+            len(train_rewards)
         if done:
             logging.info(
-                "\n\nEp {:3d}: time {}, num steps {}, FPS {:.0f}, len {}, total R {}.\n"
+                "\n\nEp {:3d}: time {}, num steps {}, FPS {:.0f}, len {},\n"
+                "        total R {}, train policy loss {:.3f}, train value loss {:.3f},\n"
+                "        train rewards {}.\n"
                 "".format(
                     count_done,
                     time.strftime("%Hh %Mm %Ss",
                                   time.gmtime(passed_time)),
                     current_counter, current_counter / passed_time,
-                    episode_length, external_reward_sum))
+                    episode_length, external_reward_sum,
+                    train_policy_loss_mean, train_value_loss_mean,
+                    train_rewards_mean))
 
             if (
                 (count_done % args.save_model_again_eps == 0) and
@@ -129,18 +162,29 @@ def test_no_curiosity(
             tb.log_value(
                 'steps_second', current_counter / passed_time, current_counter)
             tb.log_value('reward', external_reward_sum, current_counter)
+            tb.log_value(
+                'loss_train_policy_mean', train_policy_loss_mean,
+                current_counter)
+            tb.log_value(
+                'loss_train_value_mean', train_value_loss_mean,
+                current_counter)
+            tb.log_value(
+                'reward_train_mean', train_value_loss_mean,
+                current_counter)
 
-            env.close()  # Close the window after the rendering session
-            env_to_wrap.close()
+            if args.game == 'atari':
+                env.close()  # Close the window after the rendering session
+                env_to_wrap.close()
             logging.info("Episode done, close all")
 
-            external_reward_sum = 0
             episode_length = 0
+            external_reward_sum = 0
             actions.clear()
 
             if count_done >= args.max_episodes:
                 for pid in pids:
-                    os.kill(pid, signal.SIGKILL)
+                    os.kill(pid, signal.SIGTERM)
+                env.close()
                 os.kill(os.getpid(), signal.SIGKILL)
 
             count_done += 1
