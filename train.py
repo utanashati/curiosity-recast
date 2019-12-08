@@ -105,7 +105,6 @@ def train(
             entropies.append(entropy)
 
             action = prob.multinomial(num_samples=1).detach()
-            print(action)
             log_prob = log_prob.gather(1, action)
 
             state_old = state  # ICM
