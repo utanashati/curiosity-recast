@@ -97,14 +97,15 @@ def train(
                 state = torch.from_numpy(state)
             episode_length += 1
 
-            value, logit, (hx, cx) = model((state.unsqueeze(0),
-                                            (hx, cx)))
+            value, logit, (hx, cx) = model(state.unsqueeze(0),
+                                           hx, cx)
             prob = F.softmax(logit, dim=-1)
             log_prob = F.log_softmax(logit, dim=-1)
             entropy = -(log_prob * prob).sum(1, keepdim=True)
             entropies.append(entropy)
 
             action = prob.multinomial(num_samples=1).detach()
+            print(action)
             log_prob = log_prob.gather(1, action)
 
             state_old = state  # ICM
@@ -162,7 +163,7 @@ def train(
 
         R = torch.zeros(1, 1)
         if not done:
-            value, _, _ = model((state.unsqueeze(0), (hx, cx)))
+            value, _, _ = model(state.unsqueeze(0), hx, cx)
             R = value.detach()
 
         values.append(R)

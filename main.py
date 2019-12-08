@@ -18,9 +18,10 @@ from train_no_curiosity import train_no_curiosity
 
 from itertools import chain  # ICM
 
-import tensorboard_logger as tb
 import logging
 import logger
+import tensorboard_logger as tb
+from torch.utils.tensorboard import SummaryWriter
 
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
@@ -119,6 +120,7 @@ if __name__ == '__main__':
         args.max_episode_length_test = 100
 
     setup_loggings(args)
+    writer = SummaryWriter(args.sum_base_dir)
 
     if args.random_seed:
         random_seed = torch.randint(0, 1000, (1,))
@@ -136,10 +138,16 @@ if __name__ == '__main__':
     else:
         raise ValueError("Choose game between 'doom' and 'atari'.")
 
+    cx = torch.zeros(1, 256)
+    hx = torch.zeros(1, 256)
+    state = env.reset()
+    state = torch.from_numpy(state)
+
     shared_model = ActorCritic(
         # env.observation_space.shape[0], env.action_space)
         args.num_stack, env.action_space)
     shared_model.share_memory()
+    writer.add_graph(shared_model, (state.unsqueeze(0), hx, cx))
 
     if not args.no_curiosity:
         # <---ICM---
@@ -147,7 +155,12 @@ if __name__ == '__main__':
             # env.observation_space.shape[0], env.action_space)
             args.num_stack, env.action_space)
         shared_curiosity.share_memory()
+        writer.add_graph(
+            shared_curiosity,
+            (state.unsqueeze(0), torch.tensor(0).reshape(1, 1), state.unsqueeze(0)))
         # ---ICM--->
+
+    writer.close()
 
     if args.no_shared:
         optimizer = None

@@ -105,7 +105,7 @@ def test_no_curiosity(
             hx = hx.detach()
 
         with torch.no_grad():
-            value, logit, (hx, cx) = model((state.unsqueeze(0), (hx, cx)))
+            value, logit, (hx, cx) = model(state.unsqueeze(0), hx, cx)
         prob = F.softmax(logit, dim=-1)
         action = prob.max(1, keepdim=True)[1].detach()
 
