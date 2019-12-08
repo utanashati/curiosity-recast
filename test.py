@@ -46,6 +46,8 @@ def test(
         env_to_wrap.seed(args.seed + rank)
         env = env_to_wrap
 
+    env.step(0)
+
     model = ActorCritic(
         # env.observation_space.shape[0],
         args.num_stack,
@@ -124,7 +126,7 @@ def test(
         state = torch.from_numpy(state)
 
         # external reward = 0 if ICM-only mode
-        external_reward = external_reward * (1 - args.icm_only)
+        # external_reward = external_reward * (1 - args.icm_only)
         external_reward_sum += external_reward
 
         # <---ICM---
