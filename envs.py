@@ -106,6 +106,7 @@ class StackFrames(gym.Wrapper):
 # Taken from https://github.com/openai/universe-starter-agent
 def create_atari_env(env_id):
     env = gym.make(env_id)
+    env.reset()
     env = AtariRescale42x42(env)
     env = NormalizedEnv(env)
     return env

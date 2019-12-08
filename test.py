@@ -46,8 +46,6 @@ def test(
         env_to_wrap.seed(args.seed + rank)
         env = env_to_wrap
 
-    env.step(0)
-
     model = ActorCritic(
         # env.observation_space.shape[0],
         args.num_stack,
