@@ -10,11 +10,14 @@ import torch.multiprocessing as mp
 import my_optim
 from envs import create_atari_env, create_doom_env
 from model import ActorCritic, IntrinsicCuriosityModule
-from test import test
-from test_no_curiosity import test_no_curiosity
+
 from train import train
-from train_lock import train_lock
+from test import test
 from train_no_curiosity import train_no_curiosity
+from test_no_curiosity import test_no_curiosity
+from train_curiosity import train_curiosity
+from test_curiosity import test_curiosity
+from train_lock import train_lock
 
 from itertools import chain  # ICM
 
@@ -66,7 +69,7 @@ parser.add_argument('--lock', dest='lock', action='store_true', default=False,
 parser.add_argument('--clip', type=float, default=1.0,
                     help='reward clipping value')
 parser.add_argument('--icm-only', dest='icm_only', action='store_true', default=False,
-                    help='ICM only (no external reward)')
+                    help='train A3C with ICM rewards only (no external reward)')
 parser.add_argument('--eta', type=float, default=0.01,
                     help='ICM reward factor')
 parser.add_argument('--beta', type=float, default=0.2,
@@ -81,6 +84,8 @@ parser.add_argument('--no-curiosity', dest='no_curiosity', action='store_true', 
                     help='run without curiosity')
 parser.add_argument('--game', type=str, default='atari',
                     help='game mode')
+parser.add_argument('--curiosity-only', dest='curiosity_only', action='store_true', default=False,
+                    help='train only curiosity model (no A3C)')
 
 parser.add_argument('--model-file', type=str, default=None)
 parser.add_argument('--curiosity-file', type=str, default=None)
@@ -147,7 +152,7 @@ if __name__ == '__main__':
         # env.observation_space.shape[0], env.action_space)
         args.num_stack, env.action_space)
     shared_model.share_memory()
-    writer.add_graph(shared_model, (state.unsqueeze(0), hx, cx))
+    # writer.add_graph(shared_model, (state.unsqueeze(0), hx, cx))
 
     if not args.no_curiosity:
         # <---ICM---
@@ -155,9 +160,9 @@ if __name__ == '__main__':
             # env.observation_space.shape[0], env.action_space)
             args.num_stack, env.action_space)
         shared_curiosity.share_memory()
-        writer.add_graph(
-            shared_curiosity,
-            (state.unsqueeze(0), torch.tensor(0).reshape(1, 1), state.unsqueeze(0)))
+        # writer.add_graph(
+        #     shared_curiosity,
+        #     (state.unsqueeze(0), torch.tensor(0).reshape(1, 1), state.unsqueeze(0)))
         # ---ICM--->
 
     writer.close()
@@ -165,12 +170,15 @@ if __name__ == '__main__':
     if args.no_shared:
         optimizer = None
     else:
-        if not args.no_curiosity:
-            optimizer = my_optim.SharedAdam(  # ICM
-                chain(shared_model.parameters(), shared_curiosity.parameters()),
-                lr=args.lr)
-        else:
+        if args.no_curiosity:
             optimizer = my_optim.SharedAdam(shared_model.parameters(), lr=args.lr)
+        elif not args.no_curiosity:
+            if not args.curiosity_only:
+                optimizer = my_optim.SharedAdam(  # ICM
+                    chain(shared_model.parameters(), shared_curiosity.parameters()),
+                    lr=args.lr)
+            elif args.curiosity_only:
+                optimizer = my_optim.SharedAdam(shared_curiosity.parameters(), lr=args.lr)
         optimizer.share_memory()
 
     if (args.model_file is not None) and \
@@ -180,6 +188,12 @@ if __name__ == '__main__':
         shared_model.load_state_dict(torch.load(args.model_file))
         shared_curiosity.load_state_dict(torch.load(args.curiosity_file))
         optimizer.load_state_dict(torch.load(args.optimizer_file))
+
+    if args.curiosity_only:
+        if args.model_file is None:
+            raise ValueError("Please provide the A3C model file.")
+        else:
+            shared_model.load_state_dict(torch.load(args.model_file))
 
     processes = []
 
@@ -193,14 +207,6 @@ if __name__ == '__main__':
 
     if args.lock:
         train_foo = train_lock
-    elif not args.no_curiosity:
-        logging.info("Train WITH curiosity")
-        train_foo = train
-        test_foo = test
-        args_test = (
-            0, args, shared_model, shared_curiosity,
-            counter, pids, optimizer, train_policy_losses,
-            train_value_losses, train_rewards)
     elif args.no_curiosity:
         logging.info("Train WITHOUT curiosity")
         train_foo = train_no_curiosity
@@ -209,6 +215,22 @@ if __name__ == '__main__':
             0, args, shared_model,
             counter, pids, optimizer, train_policy_losses,
             train_value_losses, train_rewards)
+    elif not args.no_curiosity:
+        if not args.curiosity_only:
+            logging.info("Train WITH curiosity")
+            train_foo = train
+            test_foo = test
+            args_test = (
+                0, args, shared_model, shared_curiosity,
+                counter, pids, optimizer, train_policy_losses,
+                train_value_losses, train_rewards)
+        elif args.curiosity_only:
+            logging.info("Train curiosity model only (no A3C)")
+            train_foo = train_curiosity
+            test_foo = test_curiosity
+            args_test = (
+                0, args, shared_model, shared_curiosity,
+                counter, pids, optimizer)
 
     p = mp.Process(
         target=test_foo, args=args_test)
@@ -221,11 +243,16 @@ if __name__ == '__main__':
                 rank, args, shared_model,
                 counter, lock, pids, optimizer, train_policy_losses,
                 train_value_losses, train_rewards)
-        else:
-            args_train = (
-                rank, args, shared_model, shared_curiosity,
-                counter, lock, pids, optimizer, train_policy_losses,
-                train_value_losses, train_rewards)
+        elif not args.no_curiosity:
+            if not args.curiosity_only:
+                args_train = (
+                    rank, args, shared_model, shared_curiosity,
+                    counter, lock, pids, optimizer, train_policy_losses,
+                    train_value_losses, train_rewards)
+            elif args.curiosity_only:
+                args_train = (
+                    rank, args, shared_model, shared_curiosity,
+                    counter, lock, pids, optimizer)
         p = mp.Process(
             target=train_foo,
             args=args_train)

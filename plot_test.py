@@ -16,6 +16,8 @@ if __name__ == '__main__':
 
     with plt.style.context("ggplot"):
         c_1 = list(plt.rcParams['axes.prop_cycle'])[5]['color']
+        # 1 -- blue
+        # 5 -- green
 
         mean = np.mean(rewards[:, 1:], axis=1)
         std = np.std(rewards[:, 1:], axis=1)
