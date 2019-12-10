@@ -6,7 +6,7 @@ import logging.config
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
 
 
-def configure(dir_):
+def configure(dir_, file):
     logdict = {
         'version': 1,
         'disable_existing_loggers': True,
@@ -30,7 +30,7 @@ def configure(dir_):
                 'level': LOG_LEVEL,
                 'class': 'logging.handlers.RotatingFileHandler',
                 'formatter': 'verbose',
-                'filename': os.path.join(dir_, 'rl.log'),
+                'filename': os.path.join(dir_, file),
                 'maxBytes': 10 * 10**6,
                 'backupCount': 3
             }

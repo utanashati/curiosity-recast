@@ -38,7 +38,7 @@ parser.add_argument('--entropy-coef', type=float, default=0.01,
 parser.add_argument('--value-loss-coef', type=float, default=0.5,
                     help='value loss coefficient (default: 0.5)')
 parser.add_argument('--max-grad-norm', type=float, default=50,
-                    help='value loss coefficient (default: 50)')
+                    help='gradient clipping (default: 50)')
 parser.add_argument('--seed', type=int, default=1,
                     help='random seed (default: 1)')
 parser.add_argument('--num-processes', type=int, default=4,
@@ -99,7 +99,7 @@ def setup_loggings(args):
     if not os.path.exists(args.sum_base_dir):
         os.makedirs(args.sum_base_dir)
 
-    logger.configure(args.sum_base_dir)
+    logger.configure(args.sum_base_dir, 'rl.log')
 
     args_list = [f'{k}: {v}\n' for k, v in vars(args).items()]
     logging.info("\nArguments:\n----------\n" + ''.join(args_list))
