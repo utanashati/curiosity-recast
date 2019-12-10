@@ -64,8 +64,8 @@ def test_curiosity(
     external_reward_sum = 0
     curiosity_reward_sum = 0          # ICM
     curiosity_reward_sum_clipped = 0  # ICM
-    inv_loss = 0        # ICM
-    forw_loss = 0       # ICM
+    inv_loss = torch.tensor(0.0)        # ICM
+    forw_loss = torch.tensor(0.0)       # ICM
     curiosity_loss = 0  # ICM
     done = True
 
@@ -118,12 +118,17 @@ def test_curiosity(
 
         with torch.no_grad():
             value, logit, (hx, cx) = model(state.unsqueeze(0), hx, cx)
+
         prob = F.softmax(logit, dim=-1)
-        action = prob.max(1, keepdim=True)[1].detach()
+        action = prob.max(1, keepdim=True)[1].flatten().detach()
+
+        print(logit)
+        print(prob)
+        print(action)
 
         state_old = state  # ICM
 
-        state, external_reward, done, _ = env.step(action[0, 0].numpy())
+        state, external_reward, done, _ = env.step(action.numpy())
         state = torch.from_numpy(state)
 
         # external reward = 0 if ICM-only mode
@@ -141,11 +146,13 @@ def test_curiosity(
         #     name="invloss")
         # self.forwardloss = 0.5 * tf.reduce_mean(tf.square(tf.subtract(f, phi2)), name='forwardloss')
         # self.forwardloss = self.forwardloss * 288.0 # lenFeatures=288. Factored out to make hyperparams not depend on it.
-        prob_curiosity = F.softmax(inv_out, dim=-1)
-        log_prob_curiosity = F.log_softmax(logit, dim=-1)
-        inv_loss += float(-(log_prob_curiosity * prob_curiosity).sum(
-            1, keepdim=True).detach())
-        forw_loss += float(curiosity_reward.detach())
+        current_inv_loss = F.nll_loss(F.log_softmax(inv_out), action)
+        # prob_curiosity = F.softmax(inv_out, dim=-1)
+        # log_prob_curiosity = F.log_softmax(logit.detach(), dim=-1)
+        # current_inv_loss = -(log_prob_curiosity * prob_curiosity).sum()
+        current_forw_loss = curiosity_reward
+        inv_loss += current_inv_loss
+        forw_loss += current_forw_loss
 
         curiosity_reward = args.eta * curiosity_reward
         curiosity_reward_sum += curiosity_reward.detach()
@@ -156,7 +163,7 @@ def test_curiosity(
         done = done or episode_length >= args.max_episode_length
 
         # a quick hack to prevent the agent from stucking
-        actions.append(action[0, 0])
+        actions.append(action)
         if actions.count(actions[0]) == actions.maxlen:
             done = True
 
@@ -217,8 +224,8 @@ def test_curiosity(
             external_reward_sum = 0
             curiosity_reward_sum = 0          # ICM
             curiosity_reward_sum_clipped = 0  # ICM 
-            inv_loss = 0        # ICM
-            forw_loss = 0       # ICM
+            inv_loss = torch.tensor(0.0)        # ICM
+            forw_loss = torch.tensor(0.0)       # ICM
             curiosity_loss = 0  # ICM
             actions.clear()
 

@@ -24,7 +24,7 @@ from itertools import chain  # ICM
 import logging
 import logger
 import tensorboard_logger as tb
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         args.max_episode_length_test = 100
 
     setup_loggings(args)
-    writer = SummaryWriter(args.sum_base_dir)
+    # writer = SummaryWriter(args.sum_base_dir)
 
     if args.random_seed:
         random_seed = torch.randint(0, 1000, (1,))
@@ -165,7 +165,7 @@ if __name__ == '__main__':
         #     (state.unsqueeze(0), torch.tensor(0).reshape(1, 1), state.unsqueeze(0)))
         # ---ICM--->
 
-    writer.close()
+    # writer.close()
 
     if args.no_shared:
         optimizer = None
