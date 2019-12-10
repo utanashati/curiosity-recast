@@ -122,10 +122,6 @@ def test_curiosity(
         prob = F.softmax(logit, dim=-1)
         action = prob.max(1, keepdim=True)[1].flatten().detach()
 
-        print(logit)
-        print(prob)
-        print(action)
-
         state_old = state  # ICM
 
         state, external_reward, done, _ = env.step(action.numpy())
@@ -146,7 +142,7 @@ def test_curiosity(
         #     name="invloss")
         # self.forwardloss = 0.5 * tf.reduce_mean(tf.square(tf.subtract(f, phi2)), name='forwardloss')
         # self.forwardloss = self.forwardloss * 288.0 # lenFeatures=288. Factored out to make hyperparams not depend on it.
-        current_inv_loss = F.nll_loss(F.log_softmax(inv_out), action)
+        current_inv_loss = F.nll_loss(F.log_softmax(inv_out, dim=-1), action)
         # prob_curiosity = F.softmax(inv_out, dim=-1)
         # log_prob_curiosity = F.log_softmax(logit.detach(), dim=-1)
         # current_inv_loss = -(log_prob_curiosity * prob_curiosity).sum()
