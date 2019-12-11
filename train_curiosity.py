@@ -82,8 +82,8 @@ def train_curiosity(
             cx = cx.detach()
             hx = hx.detach()
 
-        inv_loss = torch.tensor(0.0)        # ICM
-        forw_loss = torch.tensor(0.0)       # ICM
+        inv_loss = torch.tensor(0.0)   # ICM
+        forw_loss = torch.tensor(0.0)  # ICM
 
         for step in range(args.num_steps):
             if done:
@@ -118,9 +118,6 @@ def train_curiosity(
             # self.forwardloss = 0.5 * tf.reduce_mean(tf.square(tf.subtract(f, phi2)), name='forwardloss')
             # self.forwardloss = self.forwardloss * 288.0 # lenFeatures=288. Factored out to make hyperparams not depend on it.
             current_inv_loss = F.nll_loss(F.log_softmax(inv_out, dim=-1), action)
-            # prob_curiosity = F.softmax(inv_out, dim=-1)
-            # log_prob_curiosity = F.log_softmax(logit.detach(), dim=-1)
-            # current_inv_loss = -(log_prob_curiosity * prob_curiosity).sum()
             current_forw_loss = curiosity_reward
             inv_loss += current_inv_loss
             forw_loss += current_forw_loss

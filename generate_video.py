@@ -26,8 +26,8 @@ DOOM_FONT_FILENAME = "DooM.ttf"
 # number will be added and extension (XXXXXX.png)
 FRAME_NAME_PREFIX = 'frame'
 # VIDEO_CODEC = 'XVID'
-VIDEO_CODEC = 'H264'
-# VIDEO_CODEC = 'MJPG'
+# VIDEO_CODEC = 'H264'
+VIDEO_CODEC = 'MJPG'
 
 
 # ####################################################################################
@@ -91,9 +91,10 @@ if __name__ == "__main__":
 
     recording_files = [
         f for f in os.listdir(recordings_dir)
-        if os.path.isfile(os.path.join(recordings_dir, f))]
+        if os.path.isfile(os.path.join(recordings_dir, f)) and
+        f.startswith('recording')]
 
-    output_files = ['_'.join(['video'] + f.split('_')[1:])[:-3] + 'mp4' for f in recording_files]
+    output_files = ['_'.join(['video'] + f.split('_')[1:])[:-3] + 'avi' for f in recording_files]
     print(output_files)
 
     print(recording_files)
@@ -124,19 +125,20 @@ if __name__ == "__main__":
     # Configuration and game setup
     # ####################################################################################
 
-    game = vzd.DoomGame()
-    game.load_config(args.config_file)
-    game.set_screen_resolution(resolution)
-    game.set_screen_format(vzd.ScreenFormat.BGR24)
-    game.set_window_visible(False)
-    game.set_console_enabled(False)
-    game.set_sound_enabled(False)
-    game.add_game_args("+vid_forcesurface 1")
-    game.add_game_args("-host 1")
-    game.init()
-
     for recording_file, output_file in zip(recording_files, output_files):
+        game = vzd.DoomGame()
+        game.load_config(args.config_file)
+        game.set_screen_resolution(resolution)
+        game.set_screen_format(vzd.ScreenFormat.BGR24)
+        game.set_window_visible(False)
+        game.set_console_enabled(False)
+        game.set_sound_enabled(False)
+        game.add_game_args("+vid_forcesurface 1")
+        game.add_game_args("-host 1")
+        game.init()
+
         video_name = os.path.join(output_dir, output_file)
+        print(os.path.join(recordings_dir, recording_file))
         game.replay_episode(os.path.join(recordings_dir, recording_file))
 
         screen_channels = game.get_screen_channels()
@@ -210,6 +212,8 @@ if __name__ == "__main__":
 
             if args.max_frames is not None and frame_count > int(args.max_frames):
                 break
+
+        game.close()
 
         if args.show_progress_bar:
             progress_bar.close()

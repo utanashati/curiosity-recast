@@ -107,9 +107,9 @@ def test_no_curiosity(
         with torch.no_grad():
             value, logit, (hx, cx) = model(state.unsqueeze(0), hx, cx)
         prob = F.softmax(logit, dim=-1)
-        action = prob.max(1, keepdim=True)[1].detach()
+        action = prob.max(1, keepdim=True)[1].flatten().detach()
 
-        state, external_reward, done, _ = env.step(action[0, 0].numpy())
+        state, external_reward, done, _ = env.step(action.numpy())
         state = torch.from_numpy(state)
 
         # external reward = 0 if ICM-only mode
@@ -119,7 +119,7 @@ def test_no_curiosity(
         done = done or episode_length >= args.max_episode_length
 
         # a quick hack to prevent the agent from stucking
-        actions.append(action[0, 0])
+        actions.append(action)
         if actions.count(actions[0]) == actions.maxlen:
             done = True
 
