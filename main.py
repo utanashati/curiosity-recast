@@ -86,7 +86,7 @@ parser.add_argument('--game', type=str, default='atari',
                     help='game mode')
 parser.add_argument('--curiosity-only', dest='curiosity_only', action='store_true', default=False,
                     help='train only curiosity model (no A3C)')
-parser.add_argument('--max-entropy-coef', type=float, default=0.8,
+parser.add_argument('--max-entropy-coef', type=float, default=1.0,
                     help='add nonzero entropy if entropy is less than --max-entropy')
 
 parser.add_argument('--model-file', type=str, default=None)
