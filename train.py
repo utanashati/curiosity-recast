@@ -102,6 +102,15 @@ def train(
             prob = F.softmax(logit, dim=-1)
             log_prob = F.log_softmax(logit, dim=-1)
             entropy = -(log_prob * prob).sum(1, keepdim=True)
+
+            # Entropy trick
+            if 'sparse' in args.env_name.lower():
+                max_entropy = torch.log(
+                    torch.tensor(logit.size()[1], dtype=torch.float))
+                entropy = entropy \
+                    if entropy <= args.max_entropy_coef * max_entropy \
+                    else torch.tensor(0.0)
+
             entropies.append(entropy)
 
             action = prob.multinomial(num_samples=1).flatten().detach()

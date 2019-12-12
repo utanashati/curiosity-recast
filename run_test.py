@@ -10,7 +10,6 @@ from envs import create_atari_env, create_doom_env
 from model import ActorCritic
 from gym import wrappers
 
-import tensorboard_logger as tb
 import logging
 import logger
 
@@ -43,14 +42,23 @@ if __name__ == '__main__':
     else:
         args.max_episode_length_test = 100
 
+    # Create test dir
+    test_dir = os.path.join(args.base_dir, 'test')
+    if not os.path.exists(test_dir):
+        os.makedirs(test_dir)
+
+    # Configure logs
+    logger.configure(test_dir, 'test_log.log')
+    # tb.configure(test_dir)
+
+    args_list = [f'{k}: {v}\n' for k, v in vars(args).items()]
+    logging.info("\nArguments:\n----------\n" + ''.join(args_list))
+    logging.info('Logging run logs to {}'.format(test_dir))
+
     # Create new dirs
     models_dir = os.path.join(args.base_dir, 'models')
     if not os.path.exists(models_dir):
         raise ValueError(f"No such directory: {models_dir}.")
-
-    test_dir = os.path.join(args.base_dir, 'test')
-    if not os.path.exists(test_dir):
-        os.makedirs(test_dir)
 
     videos_dir = os.path.join(test_dir, 'videos')
     if not os.path.exists(videos_dir):
@@ -60,10 +68,6 @@ if __name__ == '__main__':
     if (not os.path.exists(recordings_dir)) and (args.game == 'doom'):
         logging.info("Created recordings dir")
         os.makedirs(recordings_dir)
-
-    # Configure logs
-    logger.configure(test_dir, 'test_log.log')
-    # tb.configure(test_dir)
 
     model_files = []
     counters = []
