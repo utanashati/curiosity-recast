@@ -29,77 +29,97 @@ import tensorboard_logger as tb
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
 # Training settings
-parser = argparse.ArgumentParser(description='A3C')
+# A3C
+parser = argparse.ArgumentParser(description='ICM + A3C')
 parser.add_argument('--lr', type=float, default=0.0001,
-                    help='learning rate (default: 0.0001)')
+                    help="learning rate (default: 0.0001)")
 parser.add_argument('--gamma', type=float, default=0.99,
-                    help='discount factor for rewards (default: 0.99)')
+                    help="discount factor for rewards (default: 0.99)")
 parser.add_argument('--gae-lambda', type=float, default=1.00,
-                    help='lambda parameter for GAE (default: 1.00)')
+                    help="lambda parameter for GAE (default: 1.00)")
 parser.add_argument('--entropy-coef', type=float, default=0.01,
-                    help='entropy term coefficient (default: 0.01)')
+                    help="entropy term coefficient (default: 0.01)")
 parser.add_argument('--value-loss-coef', type=float, default=0.5,
-                    help='value loss coefficient (default: 0.5)')
+                    help="value loss coefficient (default: 0.5)")
 parser.add_argument('--max-grad-norm', type=float, default=50,
-                    help='gradient clipping (default: 50)')
-parser.add_argument('--seed', type=int, default=1,
-                    help='random seed (default: 1)')
-parser.add_argument('--num-processes', type=int, default=4,
-                    help='how many training processes to use (default: 4)')
+                    help="gradient clipping (default: 50)")
 parser.add_argument('--num-steps', type=int, default=20,
-                    help='number of forward steps in A3C (default: 20)')
+                    help="number of forward steps in A3C (default: 20)")
 parser.add_argument('--max-episode-length', type=int, default=1000000,
-                    help='maximum length of an episode (default: 1000000)')
-parser.add_argument('--env-name', default='PongDeterministic-v4',
-                    help='environment to train on (default: PongDeterministic-v4)')
-parser.add_argument('--no-shared', dest='no_shared', action='store_true', default=False,
-                    help='use an optimizer without shared momentum')
+                    help="maximum length of an episode (default: 1000000)")
+parser.add_argument('--no-shared', dest='no_shared', action='store_true',
+                    default=False,
+                    help="use an optimizer without shared momentum")
 
-parser.add_argument('--short-description', default='no_descr',
-                    help='short description of the run params '
-                    '(used in TensorBoard)')
-parser.add_argument('--save-model-again-eps', type=int, default=3,
-                    help='save the model every _ episodes')
-parser.add_argument('--save-video-again-eps', type=int, default=3,
-                    help='save the recording every _ episodes')
-parser.add_argument('--time-sleep', type=int, default=60,
-                    help='sleep time for test.py')
-parser.add_argument('--lock', dest='lock', action='store_true', default=False,
-                    help='whether to lock gradient update in train.py')
-parser.add_argument('--clip', type=float, default=1.0,
-                    help='reward clipping value')
-parser.add_argument('--icm-only', dest='icm_only', action='store_true', default=False,
-                    help='train A3C with ICM rewards only (no external reward)')
-parser.add_argument('--eta', type=float, default=0.01,
-                    help='ICM reward factor')
-parser.add_argument('--beta', type=float, default=0.2,
-                    help='curiosity_loss = (1 - args.beta) * inv_loss + args.beta * forw_loss')
-parser.add_argument('--lambda-1', type=float, default=10,
-                    help='1 / lambda from the paper')
-parser.add_argument('--max-episodes', type=int, default=1000,
-                    help='finish after _ episodes')
-parser.add_argument('--random-seed', dest='random_seed', action='store_true', default=False,
-                    help='random seed [0, 1000]')
-parser.add_argument('--no-curiosity', dest='no_curiosity', action='store_true', default=False,
-                    help='run without curiosity')
-parser.add_argument('--game', type=str, default='atari',
-                    help='game mode')
-parser.add_argument('--curiosity-only', dest='curiosity_only', action='store_true', default=False,
-                    help='train only curiosity model (no A3C)')
+parser.add_argument('--num-skip', type=int, default=4,
+                    help="number of frames to skip in 'doom' "
+                    "(see envs.py, default: 4)")
+parser.add_argument('--num-stack', type=int, default=4,
+                    help="number of frames to stack in 'doom' "
+                    "(see envs.py, default: 4)")
+
 parser.add_argument('--max-entropy-coef', type=float, default=1.0,
-                    help='add nonzero entropy if entropy is less than --max-entropy')
+                    help="add nonzero entropy if entropy is less than "
+                    "max entropy (default: 1.0)")
 
-parser.add_argument('--model-file', type=str, default=None)
-parser.add_argument('--curiosity-file', type=str, default=None)
-parser.add_argument('--optimizer-file', type=str, default=None)
+# Intrinsic Curiosity Module (ICM)
+parser.add_argument('--eta', type=float, default=0.01,
+                    help="ICM reward factor (default: 0.01)")
+parser.add_argument('--beta', type=float, default=0.2,
+                    help="curiosity_loss = (1 - args.beta) * inv_loss + "
+                    "args.beta * forw_loss (default: 0.2)")
+parser.add_argument('--lambda-1', type=float, default=10,
+                    help="the ratio of A3C and ICM learning rates "
+                    "(1 / lambda from the paper) (default: 10)")
 
-parser.add_argument('--num-skip', type=int, default=4)
-parser.add_argument('--num-stack', type=int, default=4)
+# General
+parser.add_argument('--short-description', default='no-descr',
+                    help="short description of the run (used in TensorBoard) "
+                    "(default: 'no-descr')")
+parser.add_argument('--game', type=str, default='atari',
+                    help="game ('atari' or 'doom', default: 'atari')")
+parser.add_argument('--env-name', default='PongDeterministic-v4',
+                    help="environment to train on "
+                    "(default: PongDeterministic-v4)")
+parser.add_argument('--num-processes', type=int, default=4,
+                    help="how many training processes to use (default: 4)")
+parser.add_argument('--max-episodes', type=int, default=1000,
+                    help="finish after _ episodes (default: 1000)")
+parser.add_argument('--seed', type=int, default=1,
+                    help="random seed (default: 1)")
+parser.add_argument('--random-seed', dest='random_seed', action='store_true',
+                    default=False,
+                    help="select random seed [0, 1000] (default: False)")
+parser.add_argument('--time-sleep', type=int, default=60,
+                    help="sleep time for the test process (default: 60)")
+parser.add_argument('--save-model-again-eps', type=int, default=3,
+                    help="save the model every _ episodes (default: 3)")
+parser.add_argument('--save-video-again-eps', type=int, default=3,
+                    help="save the recording every _ episodes (default: 3)")
+
+parser.add_argument('--icm-only', dest='icm_only', action='store_true',
+                    default=False,
+                    help="train the A3C with ICM rewards only "
+                    "(no external rewards) (default: False)")
+parser.add_argument('--no-curiosity', dest='no_curiosity', action='store_true',
+                    default=False,
+                    help="run without curiosity (default: False)")
+parser.add_argument('--curiosity-only', dest='curiosity_only',
+                    action='store_true', default=False,
+                    help="train only curiosity model (frozen A3C, default: False)")
+
+parser.add_argument('--clip', type=float, default=1.0,
+                    help="reward clipping value (default: 1.0)")
+
+parser.add_argument('--model-file', type=str, default=None,
+                    help="model file to start training with")
+parser.add_argument('--curiosity-file', type=str, default=None,
+                    help="curiosity file to start training with")
+parser.add_argument('--optimizer-file', type=str, default=None,
+                    help="optimizer file to start training with")
 
 
 def setup_loggings(args):
-    # current_path = os.path.dirname(os.path.realpath(__file__))
-    # args.sum_base_dir = (current_path + '/runs/{}/{}({})').format(
     args.sum_base_dir = ('runs/{}/{}({})').format(
         args.env_name, time.strftime('%Y.%m.%d-%H.%M'), args.short_description)
 
@@ -118,7 +138,11 @@ if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
     os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
+    # Parse and check args
     args = parser.parse_args()
+
+    if args.game not in ['atari', 'doom']:
+        raise ValueError("Choose game between 'doom' and 'atari'.")
 
     if args.game == 'doom':
         args.max_episode_length = 2100
@@ -142,8 +166,6 @@ if __name__ == '__main__':
             num_skip=args.num_skip, num_stack=args.num_stack)
     elif args.game == 'atari':
         env = create_atari_env(args.env_name)
-    else:
-        raise ValueError("Choose game between 'doom' and 'atari'.")
 
     cx = torch.zeros(1, 256)
     hx = torch.zeros(1, 256)
@@ -173,23 +195,31 @@ if __name__ == '__main__':
         optimizer = None
     else:
         if args.no_curiosity:
-            optimizer = my_optim.SharedAdam(shared_model.parameters(), lr=args.lr)
+            optimizer = my_optim.SharedAdam(
+                shared_model.parameters(), lr=args.lr)
         elif not args.no_curiosity:
             if not args.curiosity_only:
                 optimizer = my_optim.SharedAdam(  # ICM
                     chain(shared_model.parameters(), shared_curiosity.parameters()),
                     lr=args.lr)
             elif args.curiosity_only:
-                optimizer = my_optim.SharedAdam(shared_curiosity.parameters(), lr=args.lr)
+                optimizer = my_optim.SharedAdam(
+                    shared_curiosity.parameters(), lr=args.lr)
         optimizer.share_memory()
 
-    if (args.model_file is not None) and \
-        (args.curiosity_file is not None) and \
-            (args.optimizer_file is not None):
+    if (args.model_file is not None) and (args.optimizer_file is not None):
         logging.info("Start with a pretrained model")
         shared_model.load_state_dict(torch.load(args.model_file))
-        shared_curiosity.load_state_dict(torch.load(args.curiosity_file))
         optimizer.load_state_dict(torch.load(args.optimizer_file))
+        if (args.curiosity_file is not None):
+            if not args.no_curiosity:
+                shared_curiosity.load_state_dict(
+                    torch.load(args.curiosity_file))
+            else:
+                raise ValueError(
+                    "--curiosity-file is not None but --no-curiosity is chosen. "
+                    "Please either set --curiosity-file to None or don't use "
+                    "--no-curiosity.")
 
     if args.curiosity_only:
         if args.model_file is None:
@@ -207,9 +237,7 @@ if __name__ == '__main__':
     counter = mp.Value('i', 0)
     lock = mp.Lock()
 
-    if args.lock:
-        train_foo = train_lock
-    elif args.no_curiosity:
+    if args.no_curiosity:
         logging.info("Train WITHOUT curiosity")
         train_foo = train_no_curiosity
         test_foo = test_no_curiosity

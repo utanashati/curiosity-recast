@@ -75,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument("--title", "-t", type=str, default="title")
     parser.add_argument("--subtitle", "-s", type=str, default="subtitle")
     # parser.add_argument("--output_dir", "-o", default=None)
-    parser.add_argument("--frames_output", default="frames")
+    # parser.add_argument("--frames_output", default="frames")
     parser.add_argument("--resources_dir", default="resources")
     parser.add_argument("--fps", "-fps", default=20, type=int)
     parser.add_argument("--resolution", default="RES_640X360")
@@ -83,21 +83,6 @@ if __name__ == "__main__":
     parser.add_argument("--show_progress_bar", action="store_true", default=True)
 
     args = parser.parse_args()
-
-    recordings_dir = os.path.join(args.run_dir, 'recordings')
-    output_dir = os.path.join(args.run_dir, 'videos')
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    recording_files = [
-        f for f in os.listdir(recordings_dir)
-        if os.path.isfile(os.path.join(recordings_dir, f)) and
-        f.startswith('recording')]
-
-    output_files = ['_'.join(['video'] + f.split('_')[1:])[:-3] + 'avi' for f in recording_files]
-    print(output_files)
-
-    print(recording_files)
 
     awesome_font_file = os.path.join(args.resources_dir, AWESOME_FONT_FILENAME)
     doom_font_file = os.path.join(args.resources_dir, DOOM_FONT_FILENAME)
@@ -109,8 +94,8 @@ if __name__ == "__main__":
         print("Probably not supported resolution: {}. Aborting.".format(args.resolution))
         exit(1)
 
-    save_as_images = False
-    save_as_video = True
+    save_as_images = True
+    save_as_video = False
 
     render_captions = True
     render_rewards = False
@@ -119,13 +104,33 @@ if __name__ == "__main__":
 
     title = args.title
     subtitle = args.subtitle
-    frames_dir = os.path.join(args.frames_output, args.resolution)
+
+    recordings_dir = os.path.join(args.run_dir, 'recordings')
+    output_dir = os.path.join(args.run_dir, 'videos')
+    if save_as_video:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+    recording_files = [
+        f for f in os.listdir(recordings_dir)
+        if os.path.isfile(os.path.join(recordings_dir, f)) and
+        f.startswith('recording')]
+
+    output_files = [
+        '_'.join(['video'] + f.split('_')[1:])[:-3] + 'avi'
+        for f in recording_files]
+    output_frames = [
+        '_'.join(['frames'] + f.split('_')[1:])[:-4] for f in recording_files]
+
+    print(output_files)
+    print(output_frames)
+    print(recording_files)
 
     # ####################################################################################
     # Configuration and game setup
     # ####################################################################################
 
-    for recording_file, output_file in zip(recording_files, output_files):
+    for recording_file, output_file, output_frame in zip(recording_files, output_files, output_frames):
         game = vzd.DoomGame()
         game.load_config(args.config_file)
         game.set_screen_resolution(resolution)
@@ -164,6 +169,7 @@ if __name__ == "__main__":
         shadow = True
         shadow_pos = int(8 * ratio)
 
+        frames_dir = os.path.join(args.run_dir, 'frames', output_frame)
         if save_as_images:
             os.makedirs(frames_dir, exist_ok=True)
 

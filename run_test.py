@@ -20,21 +20,33 @@ import numpy as np
 
 parser = argparse.ArgumentParser(description='Run Test')
 parser.add_argument('--base-dir', type=str,
-                    help='directory with test runs during training')
+                    help="directory with training runs")
 parser.add_argument('--game', type=str, default='atari',
-                    help='directory with test runs during training')
+                    help="game (\'atari\' or \'doom\', default: \'atari\')")
 parser.add_argument('--env-name', type=str, default='PongDeterministic-v4',
-                    help='environment trained on')
+                    help="environment trained on "
+                    "(default: PongDeterministic-v4)")
 parser.add_argument('--max-episodes', type=int, default=3,
-                    help='number of episodes of each test run')
+                    help="number of episodes of each test run (default: 3)")
 parser.add_argument('--seed', type=int, default=1,
-                    help='random seed (default: 1).')
+                    help="random seed (default: 1)")
+parser.add_argument('--record', dest='record', action='store_true',
+                    default=False,
+                    help="record test runs (default: False).")
 
-parser.add_argument('--num-skip', type=int, default=4)
-parser.add_argument('--num-stack', type=int, default=4)
+parser.add_argument('--num-skip', type=int, default=4,
+                    help="number of frames to skip in 'doom' "
+                    "(see envs.py, default: 4)")
+parser.add_argument('--num-stack', type=int, default=4,
+                    help="number of frames to stack in 'doom' "
+                    "(see envs.py, default: 4)")
 
 if __name__ == '__main__':
+    # Parse and check args
     args = parser.parse_args()
+
+    if args.game not in ['atari', 'doom']:
+        raise ValueError("Choose game between 'doom' and 'atari'.")
 
     if args.game == 'doom':
         args.max_episode_length = 2100
@@ -49,7 +61,6 @@ if __name__ == '__main__':
 
     # Configure logs
     logger.configure(test_dir, 'test_log.log')
-    # tb.configure(test_dir)
 
     args_list = [f'{k}: {v}\n' for k, v in vars(args).items()]
     logging.info("\nArguments:\n----------\n" + ''.join(args_list))
@@ -60,14 +71,17 @@ if __name__ == '__main__':
     if not os.path.exists(models_dir):
         raise ValueError(f"No such directory: {models_dir}.")
 
-    videos_dir = os.path.join(test_dir, 'videos')
-    if not os.path.exists(videos_dir):
-        os.makedirs(videos_dir)
-
-    recordings_dir = os.path.join(test_dir, 'recordings')
-    if (not os.path.exists(recordings_dir)) and (args.game == 'doom'):
-        logging.info("Created recordings dir")
-        os.makedirs(recordings_dir)
+    if args.record:
+        if args.game == 'atari':
+            videos_dir = os.path.join(test_dir, 'videos')
+            if not os.path.exists(videos_dir):
+                logging.info("Created videos dir")
+                os.makedirs(videos_dir)
+        elif args.game == 'doom':
+            recordings_dir = os.path.join(test_dir, 'recordings')
+            if not os.path.exists(recordings_dir):
+                logging.info("Created recordings dir")
+                os.makedirs(recordings_dir)
 
     model_files = []
     counters = []
@@ -83,8 +97,6 @@ if __name__ == '__main__':
     rewards = np.zeros((len(counters), args.max_episodes + 1))
     rewards[:, 0] = counters
 
-    # print(model_files, counters)
-
     if args.game == 'doom':
         env = create_doom_env(
             args.env_name, 0,
@@ -96,8 +108,6 @@ if __name__ == '__main__':
         env_to_wrap = create_atari_env(args.env_name)
         env_to_wrap.seed(args.seed + 0)
         env = env_to_wrap
-    else:
-        raise ValueError("Choose game between 'doom' and 'atari'.")
 
     env.step(0)
 
@@ -141,23 +151,22 @@ if __name__ == '__main__':
                 cx = torch.zeros(1, 256)
                 hx = torch.zeros(1, 256)
 
-                if args.game == 'atari':
-                    pass
-                    video_dir = os.path.join(
-                        videos_dir,
-                        'video_' +
-                        time.strftime('%Y.%m.%d-%H.%M.%S_') +
-                        str(current_counter))
-                    if not os.path.exists(video_dir):
-                        os.makedirs(video_dir)
-                    logging.info("Created new video dir")
-                    env = wrappers.Monitor(env_to_wrap, video_dir, force=False)
-                    logging.info("Created new wrapper")
-                elif args.game == 'doom':
-                    pass
-                    # env.set_current_counter(current_counter)
-                    # env.set_record()
-                    # logging.info("Set new recording")
+                if args.record:
+                    if args.game == 'atari':
+                        video_dir = os.path.join(
+                            videos_dir,
+                            'video_' +
+                            time.strftime('%Y.%m.%d-%H.%M.%S_') +
+                            str(current_counter))
+                        if not os.path.exists(video_dir):
+                            os.makedirs(video_dir)
+                        logging.info("Created new video dir")
+                        env = wrappers.Monitor(env_to_wrap, video_dir, force=False)
+                        logging.info("Created new wrapper")
+                    elif args.game == 'doom':
+                        env.set_current_counter(current_counter)
+                        env.set_record()
+                        logging.info("Set new recording")
 
                 state = env.reset()
                 state = torch.from_numpy(state)
@@ -168,9 +177,9 @@ if __name__ == '__main__':
             with torch.no_grad():
                 value, logit, (hx, cx) = model(state.unsqueeze(0), hx, cx)
             prob = F.softmax(logit, dim=-1)
-            action = prob.max(1, keepdim=True)[1].detach()
+            action = prob.max(1, keepdim=True)[1].flatten().detach()
 
-            state, external_reward, done, _ = env.step(action[0, 0].numpy())
+            state, external_reward, done, _ = env.step(action.numpy())
             state = torch.from_numpy(state)
 
             # external reward = 0 if ICM-only mode
@@ -180,7 +189,7 @@ if __name__ == '__main__':
             done = done or episode_length >= args.max_episode_length
 
             # a quick hack to prevent the agent from stucking
-            actions.append(action[0, 0])
+            actions.append(action)
             if actions.count(actions[0]) == actions.maxlen:
                 done = True
 
@@ -192,8 +201,6 @@ if __name__ == '__main__':
                         time.strftime("%Hh %Mm %Ss",
                                       time.gmtime(passed_time)),
                         episode_length, external_reward_sum))
-
-                # tb.log_value('reward', external_reward_sum, current_counter)
 
                 rewards[i, count_done + 1] = external_reward_sum
 

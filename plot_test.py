@@ -7,12 +7,12 @@ import os
 
 parser = argparse.ArgumentParser(description='Plot Test')
 parser.add_argument('--file', type=str,
-                    help='file containing the log of rewards')
+                    help="file containing the log of rewards")
 parser.add_argument('--no-curiosity', dest='no_curiosity', action='store_true',
                     default=False,
-                    help='plot the model w/o curiosity (only affects the color)')
-parser.add_argument('--title', type=str, default="Dense",
-                    help='plot title.')
+                    help="plot the model w/o curiosity (only affects the color)")
+parser.add_argument('--title', type=str, default='Dense',
+                    help="plot title (default: 'Dense').")
 
 if __name__ == '__main__':
     args = parser.parse_args()

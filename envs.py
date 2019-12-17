@@ -11,8 +11,8 @@ from collections import deque
 
 
 # Modified from envs.py in https://github.com/pathak22/noreward-rl
-def create_doom_env(env_id, rank, envWrap=True,
-                    noLifeReward=False, acRepeat=0,
+def create_doom_env(env_id, rank, env_wrap=True,
+                    no_life_reward=False, acRepeat=0,
                     num_skip=4, num_stack=4):
     if 'very' in env_id.lower():
         env_id = 'VizdoomMyWayHomeVerySparse-v0'
@@ -31,13 +31,13 @@ def create_doom_env(env_id, rank, envWrap=True,
     # env = acwrapper(env)
     # env = env_wrapper.MakeEnvDynamic(env)  # to add stochasticity
 
-    if envWrap:
-        if noLifeReward:
+    if env_wrap:
+        if no_life_reward:
             env = env_wrapper.NoNegativeRewardEnv(env)
         env = PreprocessFrames(env, num_skip=num_skip)
         if num_stack > 1:
             env = StackFrames(env, num_stack=num_stack)
-    elif noLifeReward:
+    elif no_life_reward:
         env = env_wrapper.NoNegativeRewardEnv(env)
 
     return env
