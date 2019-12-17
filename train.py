@@ -75,6 +75,7 @@ def train(
         # Sync with the shared model
         model.load_state_dict(shared_model.state_dict())
         curiosity.load_state_dict(shared_curiosity.state_dict())  # ICM
+
         if done:
             cx = torch.zeros(1, 256)
             hx = torch.zeros(1, 256)

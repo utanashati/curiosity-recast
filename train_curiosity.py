@@ -75,6 +75,7 @@ def train_curiosity(
     while not killer.kill_now:
         # Sync with the shared model
         curiosity.load_state_dict(shared_curiosity.state_dict())  # ICM
+
         if done:
             cx = torch.zeros(1, 256)
             hx = torch.zeros(1, 256)

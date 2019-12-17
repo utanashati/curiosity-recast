@@ -17,7 +17,6 @@ from train_no_curiosity import train_no_curiosity
 from test_no_curiosity import test_no_curiosity
 from train_curiosity import train_curiosity
 from test_curiosity import test_curiosity
-from train_lock import train_lock
 
 from itertools import chain  # ICM
 

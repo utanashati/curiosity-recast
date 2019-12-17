@@ -64,6 +64,7 @@ def train_no_curiosity(
     while not killer.kill_now:
         # Sync with the shared model
         model.load_state_dict(shared_model.state_dict())
+
         if done:
             cx = torch.zeros(1, 256)
             hx = torch.zeros(1, 256)

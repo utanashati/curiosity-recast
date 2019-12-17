@@ -107,6 +107,7 @@ class IntrinsicCuriosityModule(torch.nn.Module):
         )
 
         self.apply(weights_init)
+
         for i in [0, 2]:
             self.inverse[i].weight.data = normalized_columns_initializer(
                 self.inverse[i].weight.data, 0.01)

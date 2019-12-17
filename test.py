@@ -21,6 +21,7 @@ def test(
 ):
     models_dir = os.path.join(args.sum_base_dir, 'models')
     if not os.path.exists(models_dir):
+        logging.info("Created models dir")
         os.makedirs(models_dir)
 
     recordings_dir = os.path.join(args.sum_base_dir, 'recordings')
@@ -28,8 +29,9 @@ def test(
         logging.info("Created recordings dir")
         os.makedirs(recordings_dir)
 
-    videos_dir = args.sum_base_dir + '/videos'
+    videos_dir = os.path.join(args.sum_base_dir, 'videos')
     if (not os.path.exists(videos_dir)) and (args.game == 'atari'):
+        logging.info("Created videos dir")
         os.makedirs(videos_dir)
 
     torch.manual_seed(args.seed + rank)
