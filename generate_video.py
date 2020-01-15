@@ -27,7 +27,8 @@ DOOM_FONT_FILENAME = "DooM.ttf"
 FRAME_NAME_PREFIX = 'frame'
 # VIDEO_CODEC = 'XVID'
 # VIDEO_CODEC = 'H264'
-VIDEO_CODEC = 'MJPG'
+# VIDEO_CODEC = 'MJPG'
+VIDEO_CODEC = 'mp4v'
 
 
 # ####################################################################################
@@ -66,21 +67,22 @@ def add_captions2frame(frame, text_x_pos, text_y_pos):
 
 if __name__ == "__main__":
     parser = ArgumentParser("Creates video file from ViZDoom's recording")
-    # parser.add_argument("--recording_file", "-r")
-    parser.add_argument("--run_dir", "-r")
+    # parser.add_argument("--recording-file", "-r")
+    parser.add_argument("--run-dir", "-r")
     parser.add_argument(
-        "--config_file", "-c", default="gym/vizdoomgym/"
+        "--config-file", "-c", default="gym/vizdoomgym/"
         "vizdoomgym/envs/scenarios/my_way_home_dense.cfg")
     # parser.add_argument("--player", "-p", type=int, default=-1)
     parser.add_argument("--title", "-t", type=str, default="title")
     parser.add_argument("--subtitle", "-s", type=str, default="subtitle")
-    # parser.add_argument("--output_dir", "-o", default=None)
-    # parser.add_argument("--frames_output", default="frames")
-    parser.add_argument("--resources_dir", default="resources")
+    # parser.add_argument("--output-dir", "-o", default=None)
+    # parser.add_argument("--frames-output", default="frames")
+    parser.add_argument("--resources-dir", default="resources")
     parser.add_argument("--fps", "-fps", default=20, type=int)
     parser.add_argument("--resolution", default="RES_640X360")
-    parser.add_argument("--max_frames", default=2100, type=int)
-    parser.add_argument("--show_progress_bar", action="store_true", default=True)
+    parser.add_argument("--max-frames", default=2100, type=int)
+    parser.add_argument("--show-progress-bar", action="store_true", default=True)
+    parser.add_argument("--num-videos", default=10, type=int)
 
     args = parser.parse_args()
 
@@ -94,8 +96,8 @@ if __name__ == "__main__":
         print("Probably not supported resolution: {}. Aborting.".format(args.resolution))
         exit(1)
 
-    save_as_images = True
-    save_as_video = False
+    save_as_images = False
+    save_as_video = True
 
     render_captions = True
     render_rewards = False
@@ -115,12 +117,15 @@ if __name__ == "__main__":
         f for f in os.listdir(recordings_dir)
         if os.path.isfile(os.path.join(recordings_dir, f)) and
         f.startswith('recording')]
+    recording_files.sort()
 
     output_files = [
-        '_'.join(['video'] + f.split('_')[1:])[:-3] + 'avi'
+        '_'.join(['video'] + f.split('_')[1:])[:-3] + 'mp4'
         for f in recording_files]
+    output_files.sort()
     output_frames = [
         '_'.join(['frames'] + f.split('_')[1:])[:-4] for f in recording_files]
+    output_frames.sort()
 
     print(output_files)
     print(output_frames)
@@ -130,7 +135,12 @@ if __name__ == "__main__":
     # Configuration and game setup
     # ####################################################################################
 
-    for recording_file, output_file, output_frame in zip(recording_files, output_files, output_frames):
+    step = len(recording_files) // args.num_videos
+    zip_ = zip(recording_files[::step], output_files[::step],
+               output_frames[::step])
+
+    for i, (recording_file, output_file, output_frame) in enumerate(zip_):
+        print(f"\nStep {i}")
         game = vzd.DoomGame()
         game.load_config(args.config_file)
         game.set_screen_resolution(resolution)

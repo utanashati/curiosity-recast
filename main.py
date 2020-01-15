@@ -8,7 +8,7 @@ import torch
 import torch.multiprocessing as mp
 
 import my_optim
-from envs import create_atari_env, create_doom_env
+from envs import create_atari_env, create_doom_env, create_picolmaze_env
 from model import ActorCritic, IntrinsicCuriosityModule
 
 from train import train
@@ -76,7 +76,7 @@ parser.add_argument('--short-description', default='no-descr',
                     help="short description of the run (used in TensorBoard) "
                     "(default: 'no-descr')")
 parser.add_argument('--game', type=str, default='atari',
-                    help="game ('atari' or 'doom', default: 'atari')")
+                    help="game ('atari', 'doom' or 'picolmaze', default: 'atari')")
 parser.add_argument('--env-name', default='PongDeterministic-v4',
                     help="environment to train on "
                     "(default: PongDeterministic-v4)")
@@ -117,6 +117,9 @@ parser.add_argument('--curiosity-file', type=str, default=None,
 parser.add_argument('--optimizer-file', type=str, default=None,
                     help="optimizer file to start training with")
 
+parser.add_argument('--num-rooms', type=int, default=4,
+                    help="number of rooms in picolmaze")
+
 
 def setup_loggings(args):
     args.sum_base_dir = ('runs/{}/{}({})').format(
@@ -140,14 +143,19 @@ if __name__ == '__main__':
     # Parse and check args
     args = parser.parse_args()
 
-    if args.game not in ['atari', 'doom']:
-        raise ValueError("Choose game between 'doom' and 'atari'.")
+    if args.game not in ['atari', 'doom', 'picolmaze']:
+        raise ValueError("Choose game between 'doom', 'atari' or 'picolmaze'.")
 
     if args.game == 'doom':
         args.max_episode_length = 2100
         args.max_episode_length_test = 2100
+    elif args.game == 'picolmaze':
+        args.max_episode_length = 500
+        args.max_episode_length_test = 500
+        args.num_stack = 3
     else:
         args.max_episode_length_test = 100
+        args.num_stack = 1
 
     setup_loggings(args)
     # writer = SummaryWriter(args.sum_base_dir)
@@ -165,6 +173,8 @@ if __name__ == '__main__':
             num_skip=args.num_skip, num_stack=args.num_stack)
     elif args.game == 'atari':
         env = create_atari_env(args.env_name)
+    elif args.game == 'picolmaze':
+        env = create_picolmaze_env(args.num_rooms)
 
     cx = torch.zeros(1, 256)
     hx = torch.zeros(1, 256)

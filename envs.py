@@ -1,5 +1,6 @@
 import cv2
 import gym
+import gym_picolmaze
 import vizdoomgym
 import numpy as np
 from gym.spaces.box import Box
@@ -8,6 +9,13 @@ import env_wrapper
 import time
 
 from collections import deque
+
+
+def create_picolmaze_env(num_rooms=4):
+    env = gym.make("picolmaze-v0", num_rooms=num_rooms)
+    env.reset()
+    env = NormalizedEnv(env)
+    return env
 
 
 # Modified from envs.py in https://github.com/pathak22/noreward-rl

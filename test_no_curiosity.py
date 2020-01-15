@@ -4,7 +4,7 @@ from collections import deque
 import torch
 import torch.nn.functional as F
 
-from envs import create_atari_env, create_doom_env
+from envs import create_atari_env, create_doom_env, create_picolmaze_env
 from model import ActorCritic
 
 import tensorboard_logger as tb
@@ -45,6 +45,10 @@ def test_no_curiosity(
         env.seed(args.seed + rank)
     elif args.game == 'atari':
         env_to_wrap = create_atari_env(args.env_name)
+        env_to_wrap.seed(args.seed + rank)
+        env = env_to_wrap
+    elif args.game == 'picolmaze':
+        env_to_wrap = create_picolmaze_env(args.num_rooms)
         env_to_wrap.seed(args.seed + rank)
         env = env_to_wrap
 
@@ -111,7 +115,7 @@ def test_no_curiosity(
         prob = F.softmax(logit, dim=-1)
         action = prob.max(1, keepdim=True)[1].flatten().detach()
 
-        state, external_reward, done, _ = env.step(action.numpy())
+        state, external_reward, done, _ = env.step(action)
         state = torch.from_numpy(state)
 
         # external reward = 0 if ICM-only mode

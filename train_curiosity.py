@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from envs import create_atari_env, create_doom_env
+from envs import create_atari_env, create_doom_env, create_picolmaze_env
 from model import ActorCritic, IntrinsicCuriosityModule
 
 from itertools import chain  # ICM
@@ -43,6 +43,8 @@ def train_curiosity(
             num_skip=args.num_skip, num_stack=args.num_stack)
     elif args.game == 'atari':
         env = create_atari_env(args.env_name)
+    elif args.game == 'picolmaze':
+        env = create_picolmaze_env(args.num_rooms)
     env.seed(args.seed + rank)
 
     model = ActorCritic(
@@ -101,7 +103,7 @@ def train_curiosity(
 
             state_old = state  # ICM
 
-            state, external_reward, done, _ = env.step(action.numpy())
+            state, external_reward, done, _ = env.step(action)
             state = torch.from_numpy(state)
 
             # external reward = 0 if ICM-only mode

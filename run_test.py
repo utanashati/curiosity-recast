@@ -6,7 +6,7 @@ import os
 import time
 from collections import deque
 
-from envs import create_atari_env, create_doom_env
+from envs import create_atari_env, create_doom_env, create_picolmaze_env
 from model import ActorCritic
 from gym import wrappers
 
@@ -41,18 +41,26 @@ parser.add_argument('--num-stack', type=int, default=4,
                     help="number of frames to stack in 'doom' "
                     "(see envs.py, default: 4)")
 
+parser.add_argument('--num-rooms', type=int, default=4,
+                    help="number of rooms in picolmaze")
+
 if __name__ == '__main__':
     # Parse and check args
     args = parser.parse_args()
 
-    if args.game not in ['atari', 'doom']:
-        raise ValueError("Choose game between 'doom' and 'atari'.")
+    if args.game not in ['atari', 'doom', 'picolmaze']:
+        raise ValueError("Choose game between 'doom', 'atari' and 'picolmaze'.")
 
     if args.game == 'doom':
         args.max_episode_length = 2100
         args.max_episode_length_test = 2100
+    elif args.game == 'picolmaze':
+        args.max_episode_length = 500
+        args.max_episode_length_test = 500
+        args.num_stack = 3
     else:
         args.max_episode_length_test = 100
+        args.num_stack = 1
 
     # Create test dir
     test_dir = os.path.join(args.base_dir, 'test')
@@ -72,7 +80,7 @@ if __name__ == '__main__':
         raise ValueError(f"No such directory: {models_dir}.")
 
     if args.record:
-        if args.game == 'atari':
+        if args.game in ['atari', 'picolmaze']:
             videos_dir = os.path.join(test_dir, 'videos')
             if not os.path.exists(videos_dir):
                 logging.info("Created videos dir")
@@ -101,11 +109,16 @@ if __name__ == '__main__':
         env = create_doom_env(
             args.env_name, 0,
             num_skip=args.num_skip, num_stack=args.num_stack)
-        env.set_recordings_dir(recordings_dir)
-        logging.info("Set recordings dir")
+        if args.record:
+            env.set_recordings_dir(recordings_dir)
+            logging.info("Set recordings dir")
         env.seed(args.seed + 0)
     elif args.game == 'atari':
         env_to_wrap = create_atari_env(args.env_name)
+        env_to_wrap.seed(args.seed + 0)
+        env = env_to_wrap
+    elif args.game == 'picolmaze':
+        env_to_wrap = create_picolmaze_env(args.num_rooms)
         env_to_wrap.seed(args.seed + 0)
         env = env_to_wrap
 
@@ -152,7 +165,7 @@ if __name__ == '__main__':
                 hx = torch.zeros(1, 256)
 
                 if args.record:
-                    if args.game == 'atari':
+                    if args.game in ['atari', 'picolmaze']:
                         video_dir = os.path.join(
                             videos_dir,
                             'video_' +
@@ -179,7 +192,7 @@ if __name__ == '__main__':
             prob = F.softmax(logit, dim=-1)
             action = prob.max(1, keepdim=True)[1].flatten().detach()
 
-            state, external_reward, done, _ = env.step(action.numpy())
+            state, external_reward, done, _ = env.step(action)
             state = torch.from_numpy(state)
 
             # external reward = 0 if ICM-only mode
@@ -204,7 +217,7 @@ if __name__ == '__main__':
 
                 rewards[i, count_done + 1] = external_reward_sum
 
-                if args.game == 'atari':
+                if args.game in ['atari', 'picolmaze']:
                     env.close()  # Close the window after the rendering session
                     env_to_wrap.close()
                 logging.info("Episode done, close all")
