@@ -3,9 +3,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from envs import create_atari_env, create_doom_env
-from model import ActorCritic, IntrinsicCuriosityModule
-
-from itertools import chain  # ICM
+from model import ActorCritic
 
 import os
 import signal
@@ -29,8 +27,8 @@ def ensure_shared_grads(model, shared_model):
         shared_param._grad = param.grad
 
 
-def train(
-    rank, args, shared_model, shared_curiosity,
+def train_no_curiosity(
+    rank, args, shared_model,
     counter, lock, pids, optimizer, train_policy_losses,
     train_value_losses, train_rewards
 ):
@@ -50,19 +48,11 @@ def train(
         # env.observation_space.shape[0],
         args.num_stack,
         env.action_space)
-    curiosity = IntrinsicCuriosityModule(  # ICM
-        # env.observation_space.shape[0],
-        args.num_stack,
-        env.action_space)
 
     if optimizer is None:
-        # optimizer = optim.Adam(shared_model.parameters(), lr=args.lr)
-        optimizer = optim.Adam(  # ICM
-            chain(shared_model.parameters(), shared_curiosity.parameters()),
-            lr=args.lr)
+        optimizer = optim.Adam(shared_model.parameters(), lr=args.lr)
 
     model.train()
-    curiosity.train()  # ICM
 
     state = env.reset()
     state = torch.from_numpy(state)
@@ -74,7 +64,6 @@ def train(
     while not killer.kill_now:
         # Sync with the shared model
         model.load_state_dict(shared_model.state_dict())
-        curiosity.load_state_dict(shared_curiosity.state_dict())  # ICM
 
         if done:
             cx = torch.zeros(1, 256)
@@ -87,9 +76,6 @@ def train(
         log_probs = []
         rewards = []
         entropies = []
-
-        inv_loss = torch.tensor(0.0)   # ICM
-        forw_loss = torch.tensor(0.0)  # ICM
 
         for step in range(args.num_steps):
             if done:
@@ -117,37 +103,11 @@ def train(
             action = prob.multinomial(num_samples=1).flatten().detach()
             log_prob = log_prob.gather(1, action.view(1, -1))
 
-            state_old = state  # ICM
-
-            state, external_reward, done, _ = env.step(action.numpy())
+            state, reward, done, _ = env.step(action.numpy())
             state = torch.from_numpy(state)
 
-            # external reward = 0 if ICM-only mode
-            external_reward = external_reward * (1 - args.icm_only)
-
-            # <---ICM---
-            inv_out, forw_out, curiosity_reward = \
-                curiosity(
-                    state_old.unsqueeze(0), action,
-                    state.unsqueeze(0))
-            # In noreward-rl:
-            # self.invloss = tf.reduce_mean(
-            #     tf.nn.sparse_softmax_cross_entropy_with_logits(logits, aindex),
-            #     name="invloss")
-            # self.forwardloss = 0.5 * tf.reduce_mean(tf.square(tf.subtract(f, phi2)), name='forwardloss')
-            # self.forwardloss = self.forwardloss * 288.0 # lenFeatures=288. Factored out to make hyperparams not depend on it.
-            current_inv_loss = F.nll_loss(F.log_softmax(inv_out, dim=-1), action)
-            current_forw_loss = curiosity_reward
-            inv_loss += current_inv_loss
-            forw_loss += current_forw_loss
-
-            curiosity_reward = args.eta * curiosity_reward
-
-            reward = max(min(external_reward, args.clip), -args.clip) + \
-                max(min(curiosity_reward.detach(), args.clip), -args.clip)
-            # ---ICM--->
-
             done = done or episode_length >= args.max_episode_length
+            reward = max(min(reward, 1), -1)
 
             with lock:
                 counter.value += 1
@@ -160,14 +120,6 @@ def train(
                 break
 
         train_rewards[rank - 1] = sum(rewards)
-
-        # <---ICM---
-        inv_loss = inv_loss / episode_length
-        forw_loss = forw_loss * (32 * 3 * 3) * 0.5 / episode_length
-
-        curiosity_loss = args.lambda_1 * (
-            (1 - args.beta) * inv_loss + args.beta * forw_loss)
-        # ---ICM--->
 
         R = torch.zeros(1, 1)
         if not done:
@@ -196,13 +148,10 @@ def train(
         train_policy_losses[rank - 1] = float((policy_loss).detach().item())
         train_value_losses[rank - 1] = float((value_loss).detach().item())
 
-        (policy_loss + args.value_loss_coef * value_loss +
-            curiosity_loss).backward()  # ICM
+        (policy_loss + args.value_loss_coef * value_loss).backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
-        torch.nn.utils.clip_grad_norm_(curiosity.parameters(), args.max_grad_norm)
 
         ensure_shared_grads(model, shared_model)
-        ensure_shared_grads(curiosity, shared_curiosity)
         optimizer.step()
 
     env.close()

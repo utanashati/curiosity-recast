@@ -14,10 +14,9 @@ import signal
 from gym import wrappers
 
 
-def test(
+def test_curiosity(
     rank, args, shared_model, shared_curiosity,
-    counter, pids, optimizer, train_policy_losses,
-    train_value_losses, train_rewards
+    counter, pids, optimizer
 ):
     models_dir = os.path.join(args.sum_base_dir, 'models')
     if not os.path.exists(models_dir):
@@ -61,6 +60,8 @@ def test(
 
     model.eval()
     curiosity.eval()  # ICM
+
+    model.load_state_dict(shared_model.state_dict())
 
     external_reward_sum = 0
     curiosity_reward_sum = 0          # ICM
@@ -119,6 +120,7 @@ def test(
 
         with torch.no_grad():
             value, logit, (hx, cx) = model(state.unsqueeze(0), hx, cx)
+
         prob = F.softmax(logit, dim=-1)
         action = prob.max(1, keepdim=True)[1].flatten().detach()
 
@@ -168,26 +170,16 @@ def test(
             curiosity_loss = args.lambda_1 * (
                 (1 - args.beta) * inv_loss + args.beta * forw_loss)
             # ---ICM--->
-
-            train_policy_loss_mean = sum(train_policy_losses) / \
-                len(train_policy_losses)
-            train_value_loss_mean = sum(train_value_losses) / \
-                len(train_value_losses)
-            train_rewards_mean = sum(train_rewards) / \
-                len(train_rewards)
             logging.info(
                 "\n\nEp {:3d}: time {}, num steps {}, FPS {:.0f}, len {},\n"
-                "        total R {:.6f}, train policy loss {:.6f}, train value loss {:.6f},\n"
-                "        train mean R {:.6f}, curiosity R {:.3f}, curiosity R clipped {:.3f},\n"
+                "        total R {:.6f}, curiosity R {:.3f}, curiosity R clipped {:.3f},\n"
                 "        inv loss {:.3f}, forw loss {:.3f}, curiosity loss {:.3f}.\n"
                 "".format(
                     count_done,
                     time.strftime("%Hh %Mm %Ss",
                                   time.gmtime(passed_time)),
                     current_counter, current_counter / passed_time,
-                    episode_length,
-                    external_reward_sum, train_policy_loss_mean,
-                    train_value_loss_mean, train_rewards_mean,
+                    episode_length, external_reward_sum,
                     curiosity_reward_sum, curiosity_reward_sum_clipped,
                     inv_loss, forw_loss, curiosity_loss))
 
@@ -195,11 +187,6 @@ def test(
                 (count_done % args.save_model_again_eps == 0) and
                 (optimizer is not None)
             ):
-                torch.save(
-                    model.state_dict(),
-                    models_dir + '/model_' +
-                    time.strftime('%Y.%m.%d-%H.%M.%S') +
-                    f'_{current_counter}.pth')
                 torch.save(
                     curiosity.state_dict(),
                     models_dir + '/curiosity_' +
@@ -222,15 +209,6 @@ def test(
             tb.log_value('loss_inv', inv_loss, current_counter)
             tb.log_value('loss_forw', forw_loss, current_counter)
             tb.log_value('loss_curiosity', curiosity_loss, current_counter)
-            tb.log_value(
-                'loss_train_policy_mean', train_policy_loss_mean,
-                current_counter)
-            tb.log_value(
-                'loss_train_value_mean', train_value_loss_mean,
-                current_counter)
-            tb.log_value(
-                'reward_train_mean', train_value_loss_mean,
-                current_counter)
 
             if args.game == 'atari':
                 env.close()  # Close the window after the rendering session

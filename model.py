@@ -4,6 +4,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def get_grad_sum(model):
+    grad = 0
+    for param in model.parameters():
+        if param.grad is not None:
+            grad += param.grad.sum()
+    return grad
+
+
 def normalized_columns_initializer(weights, std=1.0):
     out = torch.randn(weights.size())
     out *= std / torch.sqrt(out.pow(2).sum(1, keepdim=True))
@@ -55,8 +63,7 @@ class ActorCritic(torch.nn.Module):
 
         self.train()
 
-    def forward(self, inputs):
-        inputs, (hx, cx) = inputs
+    def forward(self, inputs, hx, cx):
         x = F.elu(self.conv1(inputs))
         x = F.elu(self.conv2(x))
         x = F.elu(self.conv3(x))
@@ -76,9 +83,13 @@ class IntrinsicCuriosityModule(torch.nn.Module):
         super(IntrinsicCuriosityModule, self).__init__()
         self.head = nn.Sequential(
             nn.Conv2d(num_inputs, 32, 3, stride=2, padding=1),
+            nn.ELU(),
             nn.Conv2d(32, 32, 3, stride=2, padding=1),
+            nn.ELU(),
             nn.Conv2d(32, 32, 3, stride=2, padding=1),
-            nn.Conv2d(32, 32, 3, stride=2, padding=1)
+            nn.ELU(),
+            nn.Conv2d(32, 32, 3, stride=2, padding=1),
+            nn.ELU()
         )
 
         size = 256
@@ -96,6 +107,7 @@ class IntrinsicCuriosityModule(torch.nn.Module):
         )
 
         self.apply(weights_init)
+
         for i in [0, 2]:
             self.inverse[i].weight.data = normalized_columns_initializer(
                 self.inverse[i].weight.data, 0.01)
@@ -119,7 +131,7 @@ class IntrinsicCuriosityModule(torch.nn.Module):
         inv_out = self.inverse(g)
 
         action_onehot = torch.zeros(1, self.num_actions)
-        action_onehot.scatter_(1, action, 1)
+        action_onehot.scatter_(1, action.view(1, 1), 1)
 
         f = torch.cat([phi1, action_onehot], 1)
         forw_out = self.forw(f)
