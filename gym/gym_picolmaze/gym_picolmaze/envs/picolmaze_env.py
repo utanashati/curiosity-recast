@@ -53,6 +53,10 @@ class PicolmazeEnv(gym.Env):
                 pick_color(color), pics[room]
             ) for room, color in zip(rooms, colors)]
 
+        out_dir = os.path.join(package_dir, f"../pics/out")
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+
         for i, room in enumerate(cpics):
             for j, pic in enumerate(room):
                 plt.imsave(os.path.join(
