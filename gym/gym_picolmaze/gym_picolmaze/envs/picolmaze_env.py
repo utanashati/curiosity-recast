@@ -8,14 +8,14 @@ from gym.spaces.box import Box
 from gym.spaces import Discrete
 import os
 import datetime
-import itertools
+
+from colors import same_1
 
 
 class PicolmazeEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, num_rooms=4):
-        num_rooms = 9
+    def __init__(self, num_rooms=4, colors_func=same_1):
         pic_size = 42
         package_dir, _ = os.path.split(__file__)
 
@@ -44,7 +44,9 @@ class PicolmazeEnv(gym.Env):
 
         rooms = range(num_rooms)
         # colors = [2**i for i in rooms]  # Different entropy levels
-        colors = range(1, num_rooms + 1)
+        # colors = range(1, num_rooms + 1)
+        # colors = [1] * num_rooms
+        colors = colors_func(num_rooms)
 
         cpics = [
             apply_cmaps(
@@ -59,9 +61,10 @@ class PicolmazeEnv(gym.Env):
 
         # steps_per_episode = 100
 
+        self.num_rooms = num_rooms
         self.rooms = np.arange(num_rooms).reshape(int(num_rooms**(1 / 2)), -1)
-        self.room = 0
-        self.room_2d = [0, 0]
+        self.room = np.random.choice(np.arange(num_rooms))
+        self.room_2d = list(np.unravel_index(self.room, self.rooms.shape))
         self.cpics = cpics
         self.cpic_inds = [0] * num_rooms
         self.count_end_episode = 0
@@ -128,7 +131,7 @@ class PicolmazeEnv(gym.Env):
                 end_episode, {}
 
     def reset(self):
-        self.__init__()
+        self.__init__(num_rooms=self.num_rooms)
         return self.step(0)[0]
 
     def render(self, mode='human', close=False):

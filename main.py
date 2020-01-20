@@ -116,9 +116,12 @@ parser.add_argument('--curiosity-file', type=str, default=None,
                     help="curiosity file to start training with")
 parser.add_argument('--optimizer-file', type=str, default=None,
                     help="optimizer file to start training with")
+parser.add_argument('--steps-counter', type=int, default=0,
+                    help="set different initial steps counter "
+                    "(to continue from trained, default: 0)")
 
 parser.add_argument('--num-rooms', type=int, default=4,
-                    help="number of rooms in picolmaze")
+                    help="number of rooms in picolmaze.")
 
 
 def setup_loggings(args):
@@ -243,7 +246,7 @@ if __name__ == '__main__':
     train_policy_losses = manager.list([0] * args.num_processes)
     train_value_losses = manager.list([0] * args.num_processes)
     train_rewards = manager.list([0] * args.num_processes)
-    counter = mp.Value('i', 0)
+    counter = mp.Value('i', args.steps_counter)
     lock = mp.Lock()
 
     if args.no_curiosity:

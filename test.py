@@ -88,11 +88,11 @@ def test(
     while True:
         episode_length += 1
 
-        # Sync with the shared model
         if done:
             passed_time = time.time() - start_time
             current_counter = counter.value
 
+            # Sync with the shared model
             model.load_state_dict(shared_model.state_dict())
             curiosity.load_state_dict(shared_curiosity.state_dict())  # ICM
             cx = torch.zeros(1, 256)

@@ -137,3 +137,82 @@ class IntrinsicCuriosityModule(torch.nn.Module):
         forw_out = self.forw(f)
 
         return inv_out, forw_out, F.mse_loss(forw_out, phi2.detach())
+
+
+class IntrinsicCuriosityModule2(torch.nn.Module):
+    def __init__(self, num_inputs, action_space):
+        super(IntrinsicCuriosityModule2, self).__init__()
+        self.head = nn.Sequential(
+            nn.Conv2d(num_inputs, 32, 3, stride=2, padding=1),
+            nn.ELU(),
+            nn.Conv2d(32, 32, 3, stride=2, padding=1),
+            nn.ELU(),
+            nn.Conv2d(32, 32, 3, stride=2, padding=1),
+            nn.ELU(),
+            nn.Conv2d(32, 32, 3, stride=2, padding=1),
+            nn.ELU()
+        )
+
+        size = 256
+        self.num_actions = action_space.n
+        self.inverse = nn.Sequential(
+            nn.Linear(32 * 3 * 3 * 2, size),
+            nn.ReLU(),
+            nn.Linear(size, self.num_actions)
+        )
+
+        self.forw = nn.Sequential(
+            nn.Linear(32 * 3 * 3 + self.num_actions, size),
+            nn.ReLU()
+        )
+        self.forw_mean = nn.Linear(size, 32 * 3 * 3)
+        self.forw_std = nn.Linear(size, 32 * 3 * 3)
+
+        self.apply(weights_init)
+
+        for i in [0, 2]:
+            self.inverse[i].weight.data = normalized_columns_initializer(
+                self.inverse[i].weight.data, 0.01)
+            self.inverse[i].bias.data.fill_(0)
+
+        self.forw[0].weight.data = normalized_columns_initializer(
+            self.forw[0].weight.data, 0.01)
+        self.forw[0].bias.data.fill_(0)
+
+        self.forw_mean.weight.data = normalized_columns_initializer(
+            self.forw_mean.weight.data, 0.01)
+        self.forw_mean.bias.data.fill_(0)
+
+        self.forw_std.weight.data = normalized_columns_initializer(
+            self.forw_std.weight.data, 0.01)
+        self.forw_std.bias.data.fill_(0)
+
+        self.train()
+
+    def forward(self, state_old, action, state):
+        phi1 = self.head(state_old)
+        phi2 = self.head(state)
+
+        phi1 = phi1.view(-1, 32 * 3 * 3)
+        phi2 = phi2.view(-1, 32 * 3 * 3)
+
+        g = torch.cat([phi1, phi2], 1)
+        inv_out = self.inverse(g)
+
+        action_onehot = torch.zeros(1, self.num_actions)
+        action_onehot.scatter_(1, action.view(1, 1), 1)
+
+        f = torch.cat([phi1.detach(), action_onehot], 1)
+        forw_hidden = self.forw(f)
+        forw_out_mean = self.forw_mean(forw_hidden)
+        forw_out_std = self.forw_std(forw_hidden).abs().clamp(min=0.01)
+
+        l2_loss = F.mse_loss(forw_out_mean, phi2.detach())
+        curiosity_reward = \
+            (forw_out_mean - phi2.detach())**2 / (2 * forw_out_std**2)
+        bayesian_loss = (
+            curiosity_reward + torch.log(forw_out_std)
+        ).sum(1).mean()
+
+        return inv_out, forw_out_mean, forw_out_std, \
+            l2_loss, bayesian_loss, curiosity_reward.sum(1).mean()
