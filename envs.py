@@ -1,7 +1,17 @@
 import cv2
 import gym
 import gym_picolmaze
-import vizdoomgym
+
+try:
+    import gym_picolmaze
+except ImportError:
+    print("gym_picolmaze not found")
+
+try:
+    import vizdoomgym
+except ImportError:
+    print("vizdoomgym not found")
+
 import numpy as np
 from gym.spaces.box import Box
 

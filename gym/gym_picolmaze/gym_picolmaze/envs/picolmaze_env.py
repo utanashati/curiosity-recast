@@ -47,6 +47,7 @@ class PicolmazeEnv(gym.Env):
         # colors = range(1, num_rooms + 1)
         # colors = [1] * num_rooms
         colors = colors_func(num_rooms)
+        print(colors)
 
         cpics = [
             apply_cmaps(
@@ -66,6 +67,7 @@ class PicolmazeEnv(gym.Env):
         # steps_per_episode = 100
 
         self.num_rooms = num_rooms
+        self.colors_func = colors_func
         self.rooms = np.arange(num_rooms).reshape(int(num_rooms**(1 / 2)), -1)
         self.room = np.random.choice(np.arange(num_rooms))
         self.room_2d = list(np.unravel_index(self.room, self.rooms.shape))
@@ -135,7 +137,8 @@ class PicolmazeEnv(gym.Env):
                 end_episode, {}
 
     def reset(self):
-        self.__init__(num_rooms=self.num_rooms)
+        self.__init__(
+            num_rooms=self.num_rooms, colors_func=self.colors_func)
         return self.step(0)[0]
 
     def render(self, mode='human', close=False):
