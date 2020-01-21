@@ -64,10 +64,7 @@ class PicolmazeEnv(gym.Env):
                     package_dir, f"../pics/out/{i}_{j}.jpg"
                 ), np.moveaxis(pic, 0, -1))
 
-        # steps_per_episode = 100
-
         self.num_rooms = num_rooms
-        self.colors_func = colors_func
         self.rooms = np.arange(num_rooms).reshape(int(num_rooms**(1 / 2)), -1)
         self.room = np.random.choice(np.arange(num_rooms))
         self.room_2d = list(np.unravel_index(self.room, self.rooms.shape))
@@ -137,8 +134,8 @@ class PicolmazeEnv(gym.Env):
                 end_episode, {}
 
     def reset(self):
-        self.__init__(
-            num_rooms=self.num_rooms, colors_func=self.colors_func)
+        self.room = np.random.choice(np.arange(self.num_rooms))
+        self.room_2d = list(np.unravel_index(self.room, self.rooms.shape))
         return self.step(0)[0]
 
     def render(self, mode='human', close=False):

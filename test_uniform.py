@@ -138,7 +138,10 @@ def test_uniform(
             curiosity_reward = curiosity_reward / episode_length
             max_softmax = max_softmax / episode_length
             inv_correct = inv_correct / episode_length
-            misclassified = ["{:.6f}".format(i / episode_length) for i in misclassified]
+
+            misclassified = [
+                "{:.6f}".format(i / episode_length) for i in misclassified]
+            misclassified.insert(0, f"{current_counter}")
 
             curiosity_loss = (1 - args.beta) * inv_loss + args.beta * forw_loss
             # ---ICM--->

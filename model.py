@@ -206,10 +206,15 @@ class IntrinsicCuriosityModule2(torch.nn.Module):
         forw_hidden = self.forw(f)
         forw_out_mean = self.forw_mean(forw_hidden)
         forw_out_std = self.forw_std(forw_hidden).abs().clamp(min=0.01)
+        # TODO: output of the network = log sigma => exp()
+        # exp does not explode quickly
+        # log initializes sigma at 1
+        # positive
 
         l2_loss = F.mse_loss(forw_out_mean, phi2.detach())
         curiosity_reward = \
             (forw_out_mean - phi2.detach())**2 / (2 * forw_out_std**2)
+        # TODO: run with forw_out_std = 1
         bayesian_loss = (
             curiosity_reward + torch.log(forw_out_std)
         ).sum(1).mean()
