@@ -77,7 +77,12 @@ parser.add_argument('--new-curiosity', dest='new_curiosity', action='store_true'
                     help="use the new metric of curiosity (default: False)")
 parser.add_argument('--colors', type=str, default='same_1',
                     help="function that sets up room entropies in picolmaze "
-                    "(default: 'same_1').")
+                    "(default: 'same_1')")
+parser.add_argument('--periodic', dest='periodic', action='store_true',
+                    default=False,
+                    help="whether the arens is periodic or not")
+parser.add_argument('--epsilon', type=float, default=0.0,
+                    help="epsilon for the Bayesian loss.")
 
 
 def setup_loggings(args):
@@ -118,7 +123,7 @@ if __name__ == '__main__':
     else:
         torch.manual_seed(args.seed)
 
-    env = create_picolmaze_env(args.num_rooms, args.colors)
+    env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
 
     cx = torch.zeros(1, 256)
     hx = torch.zeros(1, 256)
@@ -127,7 +132,7 @@ if __name__ == '__main__':
 
     # <---ICM---
     shared_curiosity = IntrinsicCuriosityModule2(
-        args.num_stack, env.action_space)
+        args.num_stack, env.action_space, args.epsilon)
     shared_curiosity.share_memory()
     # ---ICM--->
 

@@ -140,8 +140,9 @@ class IntrinsicCuriosityModule(torch.nn.Module):
 
 
 class IntrinsicCuriosityModule2(torch.nn.Module):
-    def __init__(self, num_inputs, action_space):
+    def __init__(self, num_inputs, action_space, epsilon=0.0):
         super(IntrinsicCuriosityModule2, self).__init__()
+        self.epsilon = epsilon
         self.head = nn.Sequential(
             nn.Conv2d(num_inputs, 32, 3, stride=2, padding=1),
             nn.ELU(),
@@ -216,7 +217,7 @@ class IntrinsicCuriosityModule2(torch.nn.Module):
         l2_loss = ((forw_out_mean - phi2.detach())**2).sum(1).mean()
         curiosity_reward = \
             (forw_out_mean - phi2.detach())**2 / \
-            (2 * torch.exp(forw_out_log_std)**2)
+            (2 * (torch.exp(forw_out_log_std) + self.epsilon)**2)
         bayesian_loss = (
             curiosity_reward + forw_out_log_std
         ).sum(1).mean()

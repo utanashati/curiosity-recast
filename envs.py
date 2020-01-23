@@ -22,9 +22,10 @@ from colors import same_1
 from collections import deque
 
 
-def create_picolmaze_env(num_rooms=4, colors_func='same_1'):
+def create_picolmaze_env(num_rooms=4, colors_func='same_1', periodic=False):
     env = gym.make(
-        'picolmaze-v0', num_rooms=num_rooms, colors_func=colors_func)
+        'picolmaze-v0', num_rooms=num_rooms,
+        colors_func=colors_func, periodic=False)
     env.reset()
     env = NormalizedEnv(env)
     return env

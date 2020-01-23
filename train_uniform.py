@@ -38,12 +38,11 @@ def train_uniform(
 
     torch.manual_seed(args.seed + rank)
 
-    env = create_picolmaze_env(args.num_rooms, args.colors)
+    env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
     env.seed(args.seed + rank)
 
     curiosity = IntrinsicCuriosityModule2(  # ICM
-        args.num_stack,
-        env.action_space)
+        args.num_stack, env.action_space, args.epsilon)
 
     if optimizer is None:
         optimizer = optim.Adam(  # ICM

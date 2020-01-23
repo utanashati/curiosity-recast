@@ -31,7 +31,7 @@ def diff_1_num_rooms_random(num_rooms):
 class PicolmazeEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, num_rooms=4, colors_func='same_1'):
+    def __init__(self, num_rooms=4, colors_func='same_1', periodic=False):
         pic_size = 42
         package_dir, _ = os.path.split(__file__)
 
@@ -81,6 +81,8 @@ class PicolmazeEnv(gym.Env):
                     package_dir, f"../pics/out/{i}_{j}.jpg"
                 ), np.moveaxis(pic, 0, -1))
 
+        self.periodic = periodic
+
         self.num_rooms = num_rooms
         self.rooms = np.arange(num_rooms).reshape(int(num_rooms**(1 / 2)), -1)
         self.room = np.random.choice(np.arange(num_rooms))
@@ -121,12 +123,20 @@ class PicolmazeEnv(gym.Env):
                 self.room_2d[1] += 1
                 self.room = np.ravel_multi_index(
                     np.array(self.room_2d).T, self.rooms.shape)
+            elif self.periodic:
+                self.room_2d[1] = 0
+                self.room = np.ravel_multi_index(
+                    np.array(self.room_2d).T, self.rooms.shape)
             return self.cpics[self.room][self.cpic_inds[self.room]], 0, \
                 end_episode, {}
 
         elif action == 'right':
             if self.room_2d[0] + 1 < self.rooms.shape[0]:
                 self.room_2d[0] += 1
+                self.room = np.ravel_multi_index(
+                    np.array(self.room_2d).T, self.rooms.shape)
+            elif self.periodic:
+                self.room_2d[0] = 0
                 self.room = np.ravel_multi_index(
                     np.array(self.room_2d).T, self.rooms.shape)
             return self.cpics[self.room][self.cpic_inds[self.room]], 0, \
@@ -137,12 +147,20 @@ class PicolmazeEnv(gym.Env):
                 self.room_2d[1] -= 1
                 self.room = np.ravel_multi_index(
                     np.array(self.room_2d).T, self.rooms.shape)
+            elif self.periodic:
+                self.room_2d[1] = 0
+                self.room = np.ravel_multi_index(
+                    np.array(self.room_2d).T, self.rooms.shape)
             return self.cpics[self.room][self.cpic_inds[self.room]], 0, \
                 end_episode, {}
 
         elif action == 'left':
             if self.room_2d[0] - 1 > -1:
                 self.room_2d[0] -= 1
+                self.room = np.ravel_multi_index(
+                    np.array(self.room_2d).T, self.rooms.shape)
+            elif self.periodic:
+                self.room_2d[0] = 0
                 self.room = np.ravel_multi_index(
                     np.array(self.room_2d).T, self.rooms.shape)
             return self.cpics[self.room][self.cpic_inds[self.room]], 0, \
