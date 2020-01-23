@@ -18,6 +18,14 @@ def same_16(num_rooms):
     return [16] * num_rooms
 
 
+def same_8(num_rooms):
+    return [8] * num_rooms
+
+
+def same_4(num_rooms):
+    return [4] * num_rooms
+
+
 def diff_1_num_rooms(num_rooms):
     return range(1, num_rooms + 1)
 
