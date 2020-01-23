@@ -6,7 +6,6 @@ import torch.nn.functional as F
 
 from envs import create_picolmaze_env
 from model import IntrinsicCuriosityModule2
-import colors
 
 import tensorboard_logger as tb
 import logging
@@ -28,7 +27,7 @@ def test_uniform(
 
     torch.manual_seed(args.seed + rank)
 
-    env = create_picolmaze_env(args.num_rooms, getattr(colors, args.colors))
+    env = create_picolmaze_env(args.num_rooms, args.colors)
     env.seed(args.seed + rank)
 
     env.step(0)
@@ -45,6 +44,10 @@ def test_uniform(
     curiosity_loss = 0  # ICM
     max_softmax = torch.tensor(0.0)
     inv_correct = 0.0
+    forw_out_std_mean = torch.tensor(0.0)
+    forw_out_mean_mean = torch.tensor(0.0)
+    l2_loss_mean = torch.tensor(0.0)
+    phi2_mean = torch.tensor(0.0)
     misclassified = [0] * env.action_space.n
     done = True
 
@@ -87,9 +90,7 @@ def test_uniform(
         state = torch.from_numpy(state)
 
         # <---ICM---
-        # bayesian_loss = 0
-        # inv_out, forw_out, l2_loss = \
-        inv_out, forw_out, forw_out_std, l2_loss, \
+        inv_out, phi2, forw_out_mean, forw_out_std, l2_loss, \
             bayesian_loss, current_curiosity_reward = \
             curiosity(
                 state_old.unsqueeze(0), action,
@@ -119,6 +120,10 @@ def test_uniform(
         curiosity_reward += current_curiosity_reward
         max_softmax += current_max_softmax
         inv_correct += current_inv_correct
+        forw_out_mean_mean += forw_out_mean.mean()
+        forw_out_std_mean += forw_out_std.mean()
+        l2_loss_mean += l2_loss.mean()
+        phi2_mean += phi2.mean()
         # ---ICM--->
 
         done = done or episode_length >= args.max_episode_length
@@ -138,6 +143,10 @@ def test_uniform(
             curiosity_reward = curiosity_reward / episode_length
             max_softmax = max_softmax / episode_length
             inv_correct = inv_correct / episode_length
+            forw_out_std_mean = forw_out_std_mean / episode_length
+            forw_out_mean_mean = forw_out_mean_mean / episode_length
+            l2_loss_mean = l2_loss_mean / episode_length
+            phi2_mean = phi2_mean / episode_length
 
             misclassified = [
                 "{:.6f}".format(i / episode_length) for i in misclassified]
@@ -157,8 +166,9 @@ def test_uniform(
                 "\n\nEp {:3d}: time {}, num steps {}, FPS {:.0f}, len {},\n"
                 "        train inv loss {:.5f}, train forw loss {:.5f},\n"
                 "        inv loss {:.5f}, forw loss {:.5f}, curiosity loss {:.3f},\n"
-                "        curiosity reward {:.3f},\n"
-                "        max softmax {:.3f}, inv correct {:.3f}.\n"
+                "        l2 loss {:.3f}, curiosity reward {:.3f},\n"
+                "        forw out mean {:.3f}, forw out std {:.3f},\n"
+                "        phi2 mean {:.3f}, max softmax {:.3f}, inv correct {:.3f}.\n"
                 "".format(
                     count_done,
                     time.strftime("%Hh %Mm %Ss",
@@ -167,8 +177,9 @@ def test_uniform(
                     episode_length,
                     train_inv_loss_mean, train_forw_loss_mean,
                     inv_loss, forw_loss, curiosity_loss,
-                    curiosity_reward,
-                    max_softmax, inv_correct))
+                    l2_loss_mean, curiosity_reward,
+                    forw_out_mean_mean, forw_out_std_mean,
+                    phi2_mean, max_softmax, inv_correct))
 
             if (
                 (count_done % args.save_model_again_eps == 0) and
@@ -196,6 +207,9 @@ def test_uniform(
             tb.log_value('action_max_softmax', max_softmax, current_counter)
             tb.log_value('action_inv_correct', inv_correct, current_counter)
             tb.log_value('reward_icm', curiosity_reward, current_counter)
+            tb.log_value('forw_out_mean_mean', forw_out_std_mean, current_counter)
+            tb.log_value('forw_out_std_mean', forw_out_mean_mean, current_counter)
+            tb.log_value('loss_l2', forw_out_mean_mean, current_counter)
 
             env.close()  # Leave or keep??? Close the window after the rendering session
             logging.info("Episode done, close all")
@@ -207,6 +221,10 @@ def test_uniform(
             curiosity_loss = 0  # ICM
             max_softmax = torch.tensor(0.0)
             inv_correct = 0.0
+            forw_out_std_mean = torch.tensor(0.0)
+            forw_out_mean_mean = torch.tensor(0.0)
+            l2_loss_mean = torch.tensor(0.0)
+            phi2_mean = torch.tensor(0.0)
             misclassified = [0] * env.action_space.n
             actions.clear()
 

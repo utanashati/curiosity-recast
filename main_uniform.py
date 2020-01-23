@@ -118,7 +118,7 @@ if __name__ == '__main__':
     else:
         torch.manual_seed(args.seed)
 
-    env = create_picolmaze_env(args.num_rooms, getattr(colors, args.colors))
+    env = create_picolmaze_env(args.num_rooms, args.colors)
 
     cx = torch.zeros(1, 256)
     hx = torch.zeros(1, 256)

@@ -9,13 +9,29 @@ from gym.spaces import Discrete
 import os
 import datetime
 
-from colors import same_1
+
+def same_1(num_rooms):
+    return [1] * num_rooms
+
+
+def same_16(num_rooms):
+    return [16] * num_rooms
+
+
+def diff_1_num_rooms(num_rooms):
+    return range(1, num_rooms + 1)
+
+
+def diff_1_num_rooms_random(num_rooms):
+    colors = np.arange(1, num_rooms + 1)
+    np.random.shuffle(colors)
+    return colors.tolist()
 
 
 class PicolmazeEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, num_rooms=4, colors_func=same_1):
+    def __init__(self, num_rooms=4, colors_func='same_1'):
         pic_size = 42
         package_dir, _ = os.path.split(__file__)
 
@@ -46,6 +62,7 @@ class PicolmazeEnv(gym.Env):
         # colors = [2**i for i in rooms]  # Different entropy levels
         # colors = range(1, num_rooms + 1)
         # colors = [1] * num_rooms
+        colors_func = globals()[colors_func]
         colors = colors_func(num_rooms)
         print(colors)
 
@@ -78,8 +95,6 @@ class PicolmazeEnv(gym.Env):
         self.observation_space = Box(0.0, 1.0, (3, pic_size, pic_size))
         # self.action_space = ActionSpace()
         # self.observation_space = StateSpace()
-
-        self.render_flag = True
 
     def step(self, action):
         assert action in range(len(self.actions))
@@ -139,13 +154,11 @@ class PicolmazeEnv(gym.Env):
         return self.step(0)[0]
 
     def render(self, mode='human', close=False):
-        if self.render_flag:
-            self.exp_dir = os.path.join(
-                os.getcwd(),
-                datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-            if not os.path.exists(self.exp_dir):
-                os.makedirs(self.exp_dir)
-            self.render_flag = False
+        # self.exp_dir = os.path.join(
+        #     os.getcwd(),
+        #     datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        # if not os.path.exists(self.exp_dir):
+        #     os.makedirs(self.exp_dir)
 
         print(f"Room: {self.room}\nPic: {self.cpic_inds[self.room]}")
 
@@ -160,11 +173,11 @@ class PicolmazeEnv(gym.Env):
         ax.text(0.95, 0.05, textstr, transform=ax.transAxes, fontsize=14,
                 verticalalignment='bottom', horizontalalignment='right', bbox=props)
 
-        plt.savefig(os.path.join(
-            self.exp_dir,
-            datetime.datetime.now().strftime('%H-%M-%S-%f.png')), dpi=72)
+        # plt.savefig(os.path.join(
+        #     self.exp_dir,
+        #     datetime.datetime.now().strftime('%H-%M-%S-%f.png')), dpi=72)
 
-        plt.close()
+        plt.show()
 
 
 # class ActionSpace(gym.Space):

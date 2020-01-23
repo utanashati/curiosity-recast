@@ -4,7 +4,6 @@ import torch.optim as optim
 
 from envs import create_picolmaze_env
 from model import IntrinsicCuriosityModule2
-import colors
 
 from itertools import chain  # ICM
 
@@ -39,7 +38,7 @@ def train_uniform(
 
     torch.manual_seed(args.seed + rank)
 
-    env = create_picolmaze_env(args.num_rooms, getattr(colors, args.colors))
+    env = create_picolmaze_env(args.num_rooms, args.colors)
     env.seed(args.seed + rank)
 
     curiosity = IntrinsicCuriosityModule2(  # ICM
@@ -93,9 +92,7 @@ def train_uniform(
             state = torch.from_numpy(state)
 
             # <---ICM---
-            # bayesian_loss = 0
-            # inv_out, forw_out, l2_loss = \
-            inv_out, forw_out, forw_out_std, l2_loss, \
+            inv_out, phi2, forw_out_mean, forw_out_std, l2_loss, \
                 bayesian_loss, current_curiosity_reward = \
                 curiosity(
                     state_old.unsqueeze(0), action,
