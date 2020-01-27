@@ -34,6 +34,7 @@ if __name__ == '__main__':
         plt.xlabel("Number of training steps")
         plt.ylabel("Fraction of misclassified actions")
         plt.title(args.title)
+        plt.ylim(-0.01, 0.21)
 
         folder = '/'.join(args.file_mc.split('/')[:-1])
         file = args.file_mc.split('/')[-1][:-3]

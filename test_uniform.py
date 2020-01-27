@@ -206,9 +206,14 @@ def test_uniform(
             tb.log_value('action_max_softmax', max_softmax, current_counter)
             tb.log_value('action_inv_correct', inv_correct, current_counter)
             tb.log_value('reward_icm', curiosity_reward, current_counter)
-            tb.log_value('forw_out_mean_mean', forw_out_std_mean, current_counter)
-            tb.log_value('forw_out_std_mean', forw_out_mean_mean, current_counter)
-            tb.log_value('loss_l2', forw_out_mean_mean, current_counter)
+            # Messed up with these
+            # tb.log_value('forw_out_mean_mean', forw_out_std_mean, current_counter)
+            # tb.log_value('forw_out_std_mean', forw_out_mean_mean, current_counter)
+            # tb.log_value('loss_l2', forw_out_mean_mean, current_counter)
+            tb.log_value('forw_out_mean_mean', forw_out_mean_mean, current_counter)
+            tb.log_value('forw_out_std_mean', forw_out_std_mean, current_counter)
+            tb.log_value('loss_l2', l2_loss_mean, current_counter)
+            tb.log_value('phi2_mean', phi2_mean, current_counter)
 
             env.close()  # Leave or keep??? Close the window after the rendering session
             logging.info("Episode done, close all")
