@@ -82,7 +82,10 @@ parser.add_argument('--periodic', dest='periodic', action='store_true',
                     default=False,
                     help="whether the arens is periodic or not")
 parser.add_argument('--epsilon', type=float, default=0.0,
-                    help="epsilon for the Bayesian loss.")
+                    help="epsilon for the Bayesian loss")
+parser.add_argument('--add-l2', dest='add_l2', action='store_true',
+                    default=False,
+                    help="whether to add l2 to Bayesian loss.")
 
 
 def setup_loggings(args):

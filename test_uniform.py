@@ -110,6 +110,8 @@ def test_uniform(
 
         if args.new_curiosity:
             current_forw_loss = bayesian_loss
+            if args.add_l2:
+                current_forw_loss += l2_loss
         else:
             current_forw_loss = l2_loss
             current_curiosity_reward = l2_loss
