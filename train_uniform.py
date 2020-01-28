@@ -151,9 +151,10 @@ def train_uniform(
         train_inv_losses[rank - 1] = float((inv_loss).detach().item())
         train_forw_losses[rank - 1] = float((forw_loss).detach().item())
 
-        curiosity_loss.backward()  # ICM
-        torch.nn.utils.clip_grad_norm_(curiosity.parameters(), args.max_grad_norm)
-        ensure_shared_grads(curiosity, shared_curiosity)
-        optimizer.step()
+        if curiosity_reward != 0:
+            curiosity_loss.backward()  # ICM
+            torch.nn.utils.clip_grad_norm_(curiosity.parameters(), args.max_grad_norm)
+            ensure_shared_grads(curiosity, shared_curiosity)
+            optimizer.step()
 
     env.close()
