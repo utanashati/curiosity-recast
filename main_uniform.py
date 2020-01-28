@@ -85,7 +85,10 @@ parser.add_argument('--epsilon', type=float, default=0.0,
                     help="epsilon for the Bayesian loss")
 parser.add_argument('--add-l2', dest='add_l2', action='store_true',
                     default=False,
-                    help="whether to add l2 to Bayesian loss.")
+                    help="whether to add l2 to Bayesian loss")
+parser.add_argument('--play-only', dest='play_only', action='store_true',
+                    default=False,
+                    help="whether to only train the [inverse] model on 'play'.")
 
 
 def setup_loggings(args):

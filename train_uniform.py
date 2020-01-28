@@ -91,11 +91,21 @@ def train_uniform(
             state = torch.from_numpy(state)
 
             # <---ICM---
-            inv_out, phi2, forw_out_mean, forw_out_std, l2_loss, \
-                bayesian_loss, current_curiosity_reward = \
-                curiosity(
-                    state_old.unsqueeze(0), action,
-                    state.unsqueeze(0))
+            if not args.play_only:
+                inv_out, phi2, forw_out_mean, forw_out_std, l2_loss, \
+                    bayesian_loss, current_curiosity_reward = \
+                    curiosity(
+                        state_old.unsqueeze(0), action,
+                        state.unsqueeze(0))
+            else:
+                if action == 0:
+                    inv_out, phi2, forw_out_mean, forw_out_std, l2_loss, \
+                        bayesian_loss, current_curiosity_reward = \
+                        curiosity(
+                            state_old.unsqueeze(0), action,
+                            state.unsqueeze(0))
+                else:
+                    continue
             # In noreward-rl:
             # self.invloss = tf.reduce_mean(
             #     tf.nn.sparse_softmax_cross_entropy_with_logits(logits, aindex),
