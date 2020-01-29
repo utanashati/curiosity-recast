@@ -2,15 +2,13 @@ import gym
 from imageio import imread
 import numpy as np
 from matplotlib import pyplot as plt
-from gym import error, spaces, utils
-from gym.utils import seeding
+# from gym import error, spaces, utils
+# from gym.utils import seeding
 from gym.spaces.box import Box
 from gym.spaces import Discrete
 import os
-import datetime
+# import datetime
 import pickle
-
-from envs import NormalizedEnv
 
 
 def same_1(num_rooms):
@@ -223,6 +221,27 @@ class PicolmazeEnv(gym.Env):
         #     datetime.datetime.now().strftime('%H-%M-%S-%f.png')), dpi=72)
 
         plt.show()
+
+
+class NormalizedEnv(gym.ObservationWrapper):
+    def __init__(self, env=None):
+        super(NormalizedEnv, self).__init__(env)
+        self.state_mean = 0
+        self.state_std = 0
+        self.alpha = 0.9999
+        self.num_steps = 0
+
+    def observation(self, observation):
+        self.num_steps += 1
+        self.state_mean = self.state_mean * self.alpha + \
+            observation.mean() * (1 - self.alpha)
+        self.state_std = self.state_std * self.alpha + \
+            observation.std() * (1 - self.alpha)
+
+        unbiased_mean = self.state_mean / (1 - pow(self.alpha, self.num_steps))
+        unbiased_std = self.state_std / (1 - pow(self.alpha, self.num_steps))
+
+        return (observation - unbiased_mean) / (unbiased_std + 1e-8)
 
 
 # class ActionSpace(gym.Space):

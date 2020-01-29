@@ -17,7 +17,6 @@ from gym.spaces.box import Box
 
 import env_wrapper
 import time
-from colors import same_1
 
 from collections import deque
 

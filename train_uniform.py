@@ -78,8 +78,10 @@ def train_uniform(
             if done:
                 episode_length = 0
                 if args.hard_reset:
+                    print("hard_reset")
                     state = env.hard_reset()
                 else:
+                    print("reset")
                     state = env.reset()
                 state = torch.from_numpy(state)
             episode_length += 1
