@@ -41,6 +41,7 @@ class PicolmazeEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, num_rooms=4, colors_func='same_1', periodic=False):
+        print(colors_func)
         pic_size = 42
         package_dir, _ = os.path.split(__file__)
 
@@ -69,6 +70,7 @@ class PicolmazeEnv(gym.Env):
 
         rooms = range(num_rooms)
         self.colors_func = colors_func
+        print(f"Self cf {self.colors_func}")
         colors_func = globals()[self.colors_func]
         colors = colors_func(num_rooms)
         print(colors)
@@ -181,6 +183,7 @@ class PicolmazeEnv(gym.Env):
         return self.step(0)[0]
 
     def hard_reset(self):
+        print(f"Hard reset {self.colors_func}")
         self = PicolmazeEnv(
             num_rooms=self.num_rooms, colors_func=self.colors_func,
             periodic=self.periodic)
@@ -188,7 +191,8 @@ class PicolmazeEnv(gym.Env):
 
     def copy(self):
         env = PicolmazeEnv(
-            num_rooms=self.num_rooms, periodic=self.periodic)
+            num_rooms=self.num_rooms, colors_func=self.colors_func,
+            periodic=self.periodic)
         env.cpics = self.cpics
         return env
 
