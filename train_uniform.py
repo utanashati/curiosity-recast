@@ -32,13 +32,14 @@ def ensure_shared_grads(model, shared_model):
 def train_uniform(
     rank, args, shared_curiosity, counter,
     lock, pids, optimizer, train_inv_losses,
-    train_forw_losses
+    train_forw_losses, env
 ):
     pids.append(os.getpid())
 
     torch.manual_seed(args.seed + rank)
 
-    env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
+    # env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
+    env = env.copy()
     env.seed(args.seed + rank)
 
     curiosity = IntrinsicCuriosityModule2(  # ICM
@@ -76,7 +77,10 @@ def train_uniform(
         for step in range(args.num_steps):
             if done:
                 episode_length = 0
-                state = env.reset()
+                if args.hard_reset:
+                    state = env.hard_reset()
+                else:
+                    state = env.reset()
                 state = torch.from_numpy(state)
             episode_length += 1
 
@@ -91,21 +95,11 @@ def train_uniform(
             state = torch.from_numpy(state)
 
             # <---ICM---
-            if not args.play_only:
-                inv_out, phi2, forw_out_mean, forw_out_std, l2_loss, \
-                    bayesian_loss, current_curiosity_reward = \
-                    curiosity(
-                        state_old.unsqueeze(0), action,
-                        state.unsqueeze(0))
-            else:
-                if action == 0:
-                    inv_out, phi2, forw_out_mean, forw_out_std, l2_loss, \
-                        bayesian_loss, current_curiosity_reward = \
-                        curiosity(
-                            state_old.unsqueeze(0), action,
-                            state.unsqueeze(0))
-                else:
-                    continue
+            inv_out, phi2, forw_out_mean, forw_out_std, l2_loss, \
+                bayesian_loss, current_curiosity_reward = \
+                curiosity(
+                    state_old.unsqueeze(0), action,
+                    state.unsqueeze(0))
             # In noreward-rl:
             # self.invloss = tf.reduce_mean(
             #     tf.nn.sparse_softmax_cross_entropy_with_logits(logits, aindex),

@@ -16,7 +16,7 @@ from gym import wrappers
 
 def test_uniform(
     rank, args, shared_curiosity, counter, pids,
-    optimizer, train_inv_losses, train_forw_losses
+    optimizer, train_inv_losses, train_forw_losses, env
 ):
     models_dir = os.path.join(args.sum_base_dir, 'models')
     if not os.path.exists(models_dir):
@@ -27,7 +27,8 @@ def test_uniform(
 
     torch.manual_seed(args.seed + rank)
 
-    env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
+    # env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
+    env = env.copy()
     env.seed(args.seed + rank)
 
     env.step(0)

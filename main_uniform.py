@@ -10,12 +10,9 @@ import torch.multiprocessing as mp
 import my_optim
 from envs import create_picolmaze_env
 from model import IntrinsicCuriosityModule2
-import colors
 
 from train_uniform import train_uniform
 from test_uniform import test_uniform
-
-from itertools import chain  # ICM
 
 import logging
 import logger
@@ -86,9 +83,9 @@ parser.add_argument('--epsilon', type=float, default=0.0,
 parser.add_argument('--add-l2', dest='add_l2', action='store_true',
                     default=False,
                     help="whether to add l2 to Bayesian loss")
-parser.add_argument('--play-only', dest='play_only', action='store_true',
+parser.add_argument('--hard-reset', dest='hard_reset', action='store_true',
                     default=False,
-                    help="whether to only train the [inverse] model on 'play'.")
+                    help="whether to reset the colors of the environment.")
 
 
 def setup_loggings(args):
@@ -130,6 +127,7 @@ if __name__ == '__main__':
         torch.manual_seed(args.seed)
 
     env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
+    env.save(os.path.join(args.sum_base_dir, 'env.pkl'))
 
     cx = torch.zeros(1, 256)
     hx = torch.zeros(1, 256)
@@ -170,12 +168,14 @@ if __name__ == '__main__':
     counter = mp.Value('i', args.steps_counter)
     lock = mp.Lock()
 
+    env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
+
     logging.info("Train curiosity with uniform policy")
     train_foo = train_uniform
     test_foo = test_uniform
     args_test = (
         0, args, shared_curiosity, counter, pids,
-        optimizer, train_inv_losses, train_forw_losses)
+        optimizer, train_inv_losses, train_forw_losses, env)
 
     p = mp.Process(
         target=test_foo, args=args_test)
@@ -186,7 +186,7 @@ if __name__ == '__main__':
         args_train = (
             rank, args, shared_curiosity, counter,
             lock, pids, optimizer, train_inv_losses,
-            train_forw_losses)
+            train_forw_losses, env)
         p = mp.Process(
             target=train_foo,
             args=args_train)

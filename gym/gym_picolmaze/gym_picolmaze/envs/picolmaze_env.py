@@ -8,6 +8,7 @@ from gym.spaces.box import Box
 from gym.spaces import Discrete
 import os
 import datetime
+import pickle
 
 
 def same_1(num_rooms):
@@ -67,10 +68,8 @@ class PicolmazeEnv(gym.Env):
             ).astype(np.float32) for cmap in cmaps]
 
         rooms = range(num_rooms)
-        # colors = [2**i for i in rooms]  # Different entropy levels
-        # colors = range(1, num_rooms + 1)
-        # colors = [1] * num_rooms
-        colors_func = globals()[colors_func]
+        self.colors_func = colors_func
+        colors_func = globals()[self.colors_func]
         colors = colors_func(num_rooms)
         print(colors)
 
@@ -79,15 +78,15 @@ class PicolmazeEnv(gym.Env):
                 pick_color(color), pics[room]
             ) for room, color in zip(rooms, colors)]
 
-        out_dir = os.path.join(package_dir, f"../pics/out")
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+        # out_dir = os.path.join(package_dir, f"../pics/out")
+        # if not os.path.exists(out_dir):
+        #     os.makedirs(out_dir)
 
-        for i, room in enumerate(cpics):
-            for j, pic in enumerate(room):
-                plt.imsave(os.path.join(
-                    package_dir, f"../pics/out/{i}_{j}.jpg"
-                ), np.moveaxis(pic, 0, -1))
+        # for i, room in enumerate(cpics):
+        #     for j, pic in enumerate(room):
+        #         plt.imsave(os.path.join(
+        #             package_dir, f"../pics/out/{i}_{j}.jpg"
+        #         ), np.moveaxis(pic, 0, -1))
 
         self.periodic = periodic
 
@@ -178,6 +177,22 @@ class PicolmazeEnv(gym.Env):
         self.room = np.random.choice(np.arange(self.num_rooms))
         self.room_2d = list(np.unravel_index(self.room, self.rooms.shape))
         return self.step(0)[0]
+
+    def hard_reset(self):
+        self = PicolmazeEnv(
+            num_rooms=self.num_rooms, colors_func=self.colors_func,
+            periodic=self.periodic)
+        return self.step(0)[0]
+
+    def copy(self):
+        env = PicolmazeEnv(
+            num_rooms=self.num_rooms, periodic=self.periodic)
+        env.cpics = self.cpics
+        return env
+
+    def save(self, file_name):
+        with open(file_name, 'wb') as fp:
+            pickle.dump(self, fp)
 
     def render(self, mode='human', close=False):
         # self.exp_dir = os.path.join(
