@@ -10,6 +10,8 @@ import os
 import datetime
 import pickle
 
+from envs import NormalizedEnv
+
 
 def same_1(num_rooms):
     return [1] * num_rooms
@@ -104,6 +106,8 @@ class PicolmazeEnv(gym.Env):
         self.observation_space = Box(0.0, 1.0, (3, pic_size, pic_size))
         # self.action_space = ActionSpace()
         # self.observation_space = StateSpace()
+
+        self = NormalizedEnv(self)
 
     def step(self, action):
         assert action in range(len(self.actions))
