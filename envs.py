@@ -1,6 +1,5 @@
 import cv2
 import gym
-import gym_picolmaze
 
 try:
     import gym_picolmaze
