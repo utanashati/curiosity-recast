@@ -133,7 +133,7 @@ class IntrinsicCuriosityModule(torch.nn.Module):
         action_onehot = torch.zeros(1, self.num_actions)
         action_onehot.scatter_(1, action.view(1, 1), 1)
 
-        f = torch.cat([phi1.detach(), action_onehot], 1)
+        f = torch.cat([phi1, action_onehot], 1)
         forw_out = self.forw(f)
 
         return inv_out, forw_out, F.mse_loss(forw_out, phi2.detach())

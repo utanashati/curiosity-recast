@@ -24,11 +24,15 @@ if __name__ == '__main__':
 
     side = int(args.num_rooms**(1 / 2))
 
-    vmin_mean = np.min(means)
-    vmax_mean = np.max(means)
+    # vmin_mean = np.min(means)
+    # vmax_mean = np.max(means)
+    vmin_mean = -2
+    vmax_mean = 6
 
-    vmin_std = np.min(stds)
-    vmax_std = np.max(stds)
+    # vmin_std = np.min(stds)
+    # vmax_std = np.max(stds)
+    vmin_std = 0
+    vmax_std = 3
 
 
     fig, axs = plt.subplots(side, side)
