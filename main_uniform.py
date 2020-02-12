@@ -117,11 +117,11 @@ if __name__ == '__main__':
     if args.env_folder is not None:
         env_file = os.path.join(args.env_folder, 'env.pkl')
         if os.path.exists(env_file):
+            logging.info("Load environment from curiosity folder")
             env = pkl.load(open(env_file, 'rb'))
-            logging.info("Loaded environment from curiosity folder")
     else:
         env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
-        env.save(os.path.join(args.sum_base_dir, 'env.pkl'))
+    env.save(os.path.join(args.sum_base_dir, 'env.pkl'))
 
     cx = torch.zeros(1, 256)
     hx = torch.zeros(1, 256)
