@@ -71,7 +71,6 @@ class PicolmazeEnv(gym.Env):
         self.colors_func = colors_func
         colors_func = globals()[self.colors_func]
         colors = colors_func(num_rooms)
-        print(colors)
 
         cpics = [
             apply_cmaps(

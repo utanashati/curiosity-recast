@@ -133,12 +133,13 @@ class IntrinsicCuriosityModule(torch.nn.Module):
         action_onehot = torch.zeros(1, self.num_actions)
         action_onehot.scatter_(1, action.view(1, 1), 1)
 
-        f = torch.cat([phi1, action_onehot], 1)
+        f = torch.cat([phi1.detach(), action_onehot], 1)
         forw_out = self.forw(f)
 
         return inv_out, forw_out, F.mse_loss(forw_out, phi2.detach())
 
 
+# Bayesian curiosity
 class IntrinsicCuriosityModule2(torch.nn.Module):
     def __init__(self, num_inputs, action_space, epsilon=0.0):
         super(IntrinsicCuriosityModule2, self).__init__()
@@ -209,10 +210,9 @@ class IntrinsicCuriosityModule2(torch.nn.Module):
         forw_out_log_std = self.forw_std(forw_hidden)
 
         # TODO: output of the network = log sigma => exp()
-        # exp does not explode quickly
-        # log initializes sigma at 1
-        # positive
-        # TODO: run curiosiry_reward with forw_out_std = 1
+        # 1. exp() does not explode quickly,
+        # 2. log = 0 initializes sigma exp(log) at 1.
+        # 3. always positive values of sigma.
 
         l2_loss = ((forw_out_mean - phi2.detach())**2).sum(1).mean()
         curiosity_reward = \

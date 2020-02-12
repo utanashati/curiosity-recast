@@ -165,18 +165,15 @@ def test_no_curiosity(
                     f'_{current_counter}.pth')
                 logging.info("Saved the model")
 
-            tb.log_value(
-                'steps_second', current_counter / passed_time, current_counter)
+            tb.log_value('steps_second', current_counter / passed_time,
+                         current_counter)
             tb.log_value('reward', external_reward_sum, current_counter)
-            tb.log_value(
-                'loss_train_policy_mean', train_policy_loss_mean,
-                current_counter)
-            tb.log_value(
-                'loss_train_value_mean', train_value_loss_mean,
-                current_counter)
-            tb.log_value(
-                'reward_train_mean', train_value_loss_mean,
-                current_counter)
+            tb.log_value('loss_train_policy_mean', train_policy_loss_mean,
+                         current_counter)
+            tb.log_value('loss_train_value_mean', train_value_loss_mean,
+                         current_counter)
+            tb.log_value('reward_train_mean', train_value_loss_mean,
+                         current_counter)
 
             if args.game == 'atari':
                 env.close()  # Close the window after the rendering session

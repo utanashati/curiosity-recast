@@ -203,13 +203,12 @@ def test_curiosity(
                     f'_{current_counter}.pth')
                 logging.info("Saved the model")
 
-            tb.log_value(
-                'steps_second', current_counter / passed_time, current_counter)
+            tb.log_value('steps_second', current_counter / passed_time,
+                         current_counter)
             tb.log_value('reward', external_reward_sum, current_counter)
             tb.log_value('reward_icm', curiosity_reward_sum, current_counter)
-            tb.log_value(
-                'reward_icm_clipped', curiosity_reward_sum_clipped,
-                current_counter)
+            tb.log_value('reward_icm_clipped', curiosity_reward_sum_clipped,
+                         current_counter)
             tb.log_value('loss_inv', inv_loss, current_counter)
             tb.log_value('loss_forw', forw_loss, current_counter)
             tb.log_value('loss_curiosity', curiosity_loss, current_counter)

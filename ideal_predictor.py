@@ -2,37 +2,23 @@ from __future__ import print_function
 
 import argparse
 import os
-import time
-
 import torch
-import torch.multiprocessing as mp
 
-import my_optim
-from envs import create_picolmaze_env
 from model import IntrinsicCuriosityModule2
-import colors
 
-from train_uniform import train_uniform
-from test_uniform import test_uniform
+import pickle as pkl
+import numpy as np
 
-import logging
-import logger
-import tensorboard_logger as tb
-# from torch.utils.tensorboard import SummaryWriter
 
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
 # Training settings
 # A3C
 parser = argparse.ArgumentParser(description='Ideal Predictor')
-parser.add_argument('--curiosity-file', type=str, default=None,
-                    help="reference curiosity (inverse model)")
-
-parser.add_argument('--num-rooms', type=int, default=4,
-                    help="number of rooms in picolmaze")
-parser.add_argument('--colors', type=str, default='same_1',
-                    help="function that sets up room entropies in picolmaze "
-                    "(default: 'same_1').")
+parser.add_argument('--folder', type=str,
+                    help="reference curiosity folder (inverse model)")
+parser.add_argument('--file', type=str,
+                    help="reference curiosity model (inverse model)")
 
 
 if __name__ == '__main__':
@@ -45,22 +31,33 @@ if __name__ == '__main__':
     args.max_episode_length_test = 1000
     args.num_stack = 3
 
-    env = create_picolmaze_env(args.num_rooms, getattr(colors, args.colors))
+    env = pkl.load(open(os.path.join(args.folder, 'env.pkl'), 'rb'))
 
-    cx = torch.zeros(1, 256)
-    hx = torch.zeros(1, 256)
-    state = env.reset()
-    state = torch.from_numpy(state)
+    curiosity = IntrinsicCuriosityModule2(args.num_stack, env.action_space)
+    curiosity.load_state_dict(torch.load(args.file), strict=False)
 
-    # <---ICM---
-    shared_curiosity = IntrinsicCuriosityModule2(
-        args.num_stack, env.action_space)
-    shared_curiosity.share_memory()
-    # ---ICM--->
+    action = torch.tensor(0)
 
-    if args.curiosity_file is not None:
-        logging.info("Load curiosity")
-        shared_curiosity.load_state_dict(
-            torch.load(args.curiosity_file), strict=False)
-    else:
-        raise ValueError("Curiosity file must be chosen.")
+    phis = []
+    for i, room in enumerate(env.cpics):
+        phis.append([])
+        for pic in room:
+            state = torch.from_numpy(pic)
+            _, phi, _, _, _, _, _ = \
+                curiosity(state.unsqueeze(0), action, state.unsqueeze(0))
+            phis[i].append(phi.detach())
+
+    means = []
+    stds = []
+    for room in phis:
+        room = torch.cat(room, 0)
+        print(room.shape)
+        print(torch.mean(room, dim=0).unsqueeze(0).shape)
+        means.append(torch.mean(room, dim=0).unsqueeze(0).numpy())
+        stds.append(torch.std(room, dim=0).unsqueeze(0).numpy())
+
+    means = np.concatenate(means, 0)
+    stds = np.concatenate(stds, 0)
+
+    np.savetxt(os.path.join(args.folder, 'inv_head_means.csv'), means, delimiter=',')
+    np.savetxt(os.path.join(args.folder, 'inv_head_stds.csv'), stds, delimiter=',')

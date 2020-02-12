@@ -4,14 +4,12 @@ from collections import deque
 import torch
 import torch.nn.functional as F
 
-from envs import create_picolmaze_env
 from model import IntrinsicCuriosityModule2
 
 import tensorboard_logger as tb
 import logging
 import os
 import signal
-from gym import wrappers
 
 
 def test_uniform(
@@ -138,9 +136,6 @@ def test_uniform(
         if done:
             # <---ICM---
             inv_loss = inv_loss / episode_length
-            # lenFeatures=288. Factored out to make hyperparams not depend on it.
-            # NB: To me, it seems that it only makes hyperparameters DEPEND on it.
-            # forw_loss = forw_loss * (32 * 3 * 3) * 0.5 / episode_length
             forw_loss = forw_loss / episode_length
             curiosity_reward = curiosity_reward / episode_length
             max_softmax = max_softmax / episode_length
@@ -157,7 +152,9 @@ def test_uniform(
             curiosity_loss = (1 - args.beta) * inv_loss + args.beta * forw_loss
             # ---ICM--->
 
-            with open(os.path.join(args.sum_base_dir, 'misclassified.csv'), 'a') as f:
+            with open(
+                os.path.join(args.sum_base_dir, 'misclassified.csv'), 'a'
+            ) as f:
                 f.write(','.join(misclassified) + '\n')
 
             train_inv_loss_mean = sum(train_inv_losses) / \
@@ -199,26 +196,26 @@ def test_uniform(
                     f'_{current_counter}.pth')
                 logging.info("Saved the model")
 
-            tb.log_value(
-                'steps_second', current_counter / passed_time, current_counter)
+            tb.log_value('steps_second', current_counter / passed_time,
+                         current_counter)
             tb.log_value('loss_inv', inv_loss, current_counter)
             tb.log_value('loss_forw', forw_loss, current_counter)
             tb.log_value('loss_curiosity', curiosity_loss, current_counter)
-            tb.log_value('loss_train_inv_mean', train_inv_loss_mean, current_counter)
-            tb.log_value('loss_train_forw_mean', train_forw_loss_mean, current_counter)
+            tb.log_value('loss_train_inv_mean', train_inv_loss_mean,
+                         current_counter)
+            tb.log_value('loss_train_forw_mean', train_forw_loss_mean,
+                         current_counter)
             tb.log_value('action_max_softmax', max_softmax, current_counter)
             tb.log_value('action_inv_correct', inv_correct, current_counter)
             tb.log_value('reward_icm', curiosity_reward, current_counter)
-            # Messed up with these
-            # tb.log_value('forw_out_mean_mean', forw_out_std_mean, current_counter)
-            # tb.log_value('forw_out_std_mean', forw_out_mean_mean, current_counter)
-            # tb.log_value('loss_l2', forw_out_mean_mean, current_counter)
-            tb.log_value('forw_out_mean_mean', forw_out_mean_mean, current_counter)
-            tb.log_value('forw_out_std_mean', forw_out_std_mean, current_counter)
+            tb.log_value('forw_out_mean_mean', forw_out_mean_mean,
+                         current_counter)
+            tb.log_value('forw_out_std_mean', forw_out_std_mean,
+                         current_counter)
             tb.log_value('loss_l2', l2_loss_mean, current_counter)
             tb.log_value('phi2_mean', phi2_mean, current_counter)
 
-            env.close()  # Leave or keep??? Close the window after the rendering session
+            env.close()  # Close the window after the rendering session
             logging.info("Episode done, close all")
 
             episode_length = 0

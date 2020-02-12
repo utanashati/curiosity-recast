@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from envs import create_picolmaze_env
 from model import IntrinsicCuriosityModule2
 
 from itertools import chain  # ICM
@@ -133,9 +132,6 @@ def train_uniform(
 
         # <---ICM---
         inv_loss = inv_loss / episode_length
-        # lenFeatures=288. Factored out to make hyperparams not depend on it.
-        # NB: To me, it seems that it only makes hyperparameters DEPEND on it.
-        # forw_loss = forw_loss * (32 * 3 * 3) * 0.5 / episode_length
         forw_loss = forw_loss / episode_length
         curiosity_reward = curiosity_reward / episode_length
 
