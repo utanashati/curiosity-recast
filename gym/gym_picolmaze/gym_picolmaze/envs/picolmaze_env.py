@@ -179,6 +179,11 @@ class PicolmazeEnv(gym.Env):
         self.room_2d = list(np.unravel_index(self.room, self.rooms.shape))
         return self.step(0)[0]
 
+    def set_room(self, room):
+        self.room = room
+        self.room_2d = list(np.unravel_index(self.room, self.rooms.shape))
+        return self.step(0)[0]
+
     def hard_reset(self):
         self = PicolmazeEnv(
             num_rooms=self.num_rooms, colors_func=self.colors_func,

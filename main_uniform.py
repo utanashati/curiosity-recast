@@ -16,6 +16,8 @@ from test_uniform import test_uniform
 import logging
 from logger import setup_logs
 
+import pickle as pkl
+
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
 # Training settings
@@ -83,6 +85,8 @@ parser.add_argument('--curiosity-file', type=str, default=None,
                     help="curiosity file to start training with")
 parser.add_argument('--optimizer-file', type=str, default=None,
                     help="optimizer file to start training with")
+parser.add_argument('--env-folder', type=str, default=None,
+                    help="folder with env file")
 parser.add_argument('--steps-counter', type=int, default=0,
                     help="set different initial steps counter "
                     "(to continue from trained, default: 0)")
@@ -110,8 +114,14 @@ if __name__ == '__main__':
     else:
         torch.manual_seed(args.seed)
 
-    env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
-    env.save(os.path.join(args.sum_base_dir, 'env.pkl'))
+    if args.env_folder is not None:
+        env_file = os.path.join(args.env_folder, 'env.pkl')
+        if os.path.exists(env_file):
+            env = pkl.load(open(os.path.join(args.folder, 'env.pkl'), 'rb'))
+            logging.info("Loaded environment from curiosity folder")
+    else:
+        env = create_picolmaze_env(args.num_rooms, args.colors, args.periodic)
+        env.save(os.path.join(args.sum_base_dir, 'env.pkl'))
 
     cx = torch.zeros(1, 256)
     hx = torch.zeros(1, 256)

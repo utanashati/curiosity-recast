@@ -17,9 +17,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     means = np.loadtxt(open(
-        os.path.join(args.folder, 'inv_head_means.csv'), 'rb'), delimiter=',')
+        os.path.join(args.folder, 'forw_out_means.csv'), 'rb'), delimiter=',')
     stds = np.loadtxt(open(
-        os.path.join(args.folder, 'inv_head_stds.csv'), 'rb'), delimiter=',')
+        os.path.join(args.folder, 'forw_out_stds.csv'), 'rb'), delimiter=',')
     stds = np.nan_to_num(stds)
 
     side = int(args.num_rooms**(1 / 2))
@@ -30,8 +30,7 @@ if __name__ == '__main__':
     vmin_std = np.min(stds)
     vmax_std = np.max(stds)
 
-
-    fig, axs = plt.subplots(side, side)
+    fig, axs = plt.subplots(side, side, sharex=True, sharey=True)
 
     for i in range(args.num_rooms):
         ax = axs[i % side, i // side]
@@ -40,11 +39,11 @@ if __name__ == '__main__':
         fig.colorbar(img, ax=ax)
         ax.set_axis_off()
 
-    plt.savefig(os.path.join(args.folder, 'inv_head_means.pdf'), dpi=300)
+    plt.savefig(os.path.join(args.folder, 'forw_out_means.pdf'), dpi=300)
     plt.close()
 
 
-    fig, axs = plt.subplots(side, side)
+    fig, axs = plt.subplots(side, side, sharex=True, sharey=True)
 
     for i in range(args.num_rooms):
         ax = axs[i % side, i // side]
@@ -53,11 +52,11 @@ if __name__ == '__main__':
         fig.colorbar(img, ax=ax)
         ax.set_axis_off()
 
-    plt.savefig(os.path.join(args.folder, 'inv_head_means_sorted.pdf'), dpi=300)
+    plt.savefig(os.path.join(args.folder, 'forw_out_means_sorted.pdf'), dpi=300)
     plt.close()
 
 
-    fig, axs = plt.subplots(side, side)
+    fig, axs = plt.subplots(side, side, sharex=True, sharey=True)
 
     for i in range(args.num_rooms):
         ax = axs[i % side, i // side]
@@ -66,11 +65,11 @@ if __name__ == '__main__':
         fig.colorbar(img, ax=ax)
         ax.set_axis_off()
 
-    plt.savefig(os.path.join(args.folder, 'inv_head_stds.pdf'), dpi=300)
+    plt.savefig(os.path.join(args.folder, 'forw_out_stds.pdf'), dpi=300)
     plt.close()
 
 
-    fig, axs = plt.subplots(side, side)
+    fig, axs = plt.subplots(side, side, sharex=True, sharey=True)
 
     for i in range(args.num_rooms):
         ax = axs[i % side, i // side]
@@ -79,7 +78,7 @@ if __name__ == '__main__':
         fig.colorbar(img, ax=ax)
         ax.set_axis_off()
 
-    plt.savefig(os.path.join(args.folder, 'inv_head_stds_sorted.pdf'), dpi=300)
+    plt.savefig(os.path.join(args.folder, 'forw_out_stds_sorted.pdf'), dpi=300)
     plt.close()
 
 
@@ -89,5 +88,5 @@ if __name__ == '__main__':
     plt.plot(means_tsne[:, 0], means_tsne[:, 1])
     plt.plot(stds_tsne[:, 0], stds_tsne[:, 1])
 
-    plt.savefig(os.path.join(args.folder, 'inv_head_stds_tsne.pdf'), dpi=300)
+    plt.savefig(os.path.join(args.folder, 'forw_out_tsne.pdf'), dpi=300)
     plt.close()
