@@ -8,7 +8,7 @@ from gym.spaces.box import Box
 from gym.spaces import Discrete
 import os
 # import datetime
-import pickle
+import pickle as pkl
 
 
 def same_1(num_rooms):
@@ -81,11 +81,11 @@ class PicolmazeEnv(gym.Env):
         # if not os.path.exists(out_dir):
         #     os.makedirs(out_dir)
 
-        # for i, room in enumerate(cpics):
-        #     for j, pic in enumerate(room):
-        #         plt.imsave(os.path.join(
-        #             package_dir, f"../pics/out/{i}_{j}.jpg"
-        #         ), np.moveaxis(pic, 0, -1))
+        for i, room in enumerate(cpics):
+            for j, pic in enumerate(room):
+                plt.imsave(os.path.join(
+                    package_dir, f"../pics/out/{i}_{j}.jpg"
+                ), np.moveaxis(pic, 0, -1))
 
         self.periodic = periodic
 
@@ -199,7 +199,7 @@ class PicolmazeEnv(gym.Env):
 
     def save(self, file_name):
         with open(file_name, 'wb') as fp:
-            pickle.dump(self, fp)
+            pkl.dump(self, fp)
 
     def render(self, mode='human', close=False):
         # self.exp_dir = os.path.join(

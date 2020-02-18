@@ -136,8 +136,9 @@ if __name__ == "__main__":
     # ####################################################################################
 
     step = len(recording_files) // args.num_videos
-    zip_ = zip(recording_files[::step], output_files[::step],
-               output_frames[::step])
+    zip_ = zip(recording_files[::step] + [recording_files[-1]],
+               output_files[::step] + [output_files[-1]],
+               output_frames[::step] + [output_frames[-1]])
 
     for i, (recording_file, output_file, output_frame) in enumerate(zip_):
         print(f"\nStep {i}")

@@ -8,6 +8,7 @@ from model import IntrinsicCuriosityModule2
 
 import pickle as pkl
 import numpy as np
+import itertools
 
 
 # Based on
@@ -55,9 +56,9 @@ if __name__ == '__main__':
         for i in range(1, 5):
             actions[i] = torch.tensor(actions[i])
 
-        for proom_i, prev_room in enumerate(prev_rooms):
-            for cpic_i in range(len(env.cpics[prev_room])):
-                for pic in room:
+        for pic in room:
+            for proom_i, prev_room in enumerate(prev_rooms):
+                for cpic_i in range(len(env.cpics[prev_room])):
                     state_old = torch.from_numpy(env.cpics[prev_room][cpic_i])
                     state = torch.from_numpy(pic)
                     _, _, forw_out_mean, forw_out_std, _, _, _ = \
@@ -80,3 +81,20 @@ if __name__ == '__main__':
 
     np.savetxt(os.path.join(args.folder, 'forw_out_means.csv'), means, delimiter=',')
     np.savetxt(os.path.join(args.folder, 'forw_out_stds.csv'), stds, delimiter=',')
+
+    def process(arr):
+        for i in range(len(arr)):
+            for j in range(len(arr[i])):
+                arr[i][j] = np.insert(arr[i][j].numpy(), 0, i)[np.newaxis, :]
+
+        print(arr[0][0].shape)
+
+        arr = list(itertools.chain(*arr))
+        print(len(arr), arr[0].shape)
+        return np.concatenate(arr, 0)
+
+    forw_out_means = process(forw_out_means)
+    forw_out_stds = process(forw_out_stds)
+
+    np.savetxt(os.path.join(args.folder, 'forw_out_means_arr.csv'), forw_out_means, delimiter=',')
+    np.savetxt(os.path.join(args.folder, 'forw_out_stds_arr.csv'), forw_out_stds, delimiter=',')
