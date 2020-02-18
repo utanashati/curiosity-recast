@@ -4,7 +4,7 @@ from collections import deque
 import torch
 import torch.nn.functional as F
 
-from envs import create_atari_env, create_doom_env
+from envs import create_atari_env, create_doom_env, create_picolmaze_env
 from model import ActorCritic, IntrinsicCuriosityModule
 
 import tensorboard_logger as tb
@@ -46,6 +46,10 @@ def test_curiosity(
         env_to_wrap = create_atari_env(args.env_name)
         env_to_wrap.seed(args.seed + rank)
         env = env_to_wrap
+    elif args.game == 'picolmaze':
+        env_to_wrap = create_picolmaze_env(args.num_rooms)
+        env_to_wrap.seed(args.seed + rank)
+        env = env_to_wrap
 
     env.step(0)
 
@@ -85,11 +89,11 @@ def test_curiosity(
     while True:
         episode_length += 1
 
-        # Sync with the shared model
         if done:
             passed_time = time.time() - start_time
             current_counter = counter.value
 
+            # Sync with the shared model
             model.load_state_dict(shared_model.state_dict())
             curiosity.load_state_dict(shared_curiosity.state_dict())  # ICM
             cx = torch.zeros(1, 256)
@@ -126,7 +130,7 @@ def test_curiosity(
 
         state_old = state  # ICM
 
-        state, external_reward, done, _ = env.step(action.numpy())
+        state, external_reward, done, _ = env.step(action)
         state = torch.from_numpy(state)
 
         # external reward = 0 if ICM-only mode
@@ -199,13 +203,12 @@ def test_curiosity(
                     f'_{current_counter}.pth')
                 logging.info("Saved the model")
 
-            tb.log_value(
-                'steps_second', current_counter / passed_time, current_counter)
+            tb.log_value('steps_second', current_counter / passed_time,
+                         current_counter)
             tb.log_value('reward', external_reward_sum, current_counter)
             tb.log_value('reward_icm', curiosity_reward_sum, current_counter)
-            tb.log_value(
-                'reward_icm_clipped', curiosity_reward_sum_clipped,
-                current_counter)
+            tb.log_value('reward_icm_clipped', curiosity_reward_sum_clipped,
+                         current_counter)
             tb.log_value('loss_inv', inv_loss, current_counter)
             tb.log_value('loss_forw', forw_loss, current_counter)
             tb.log_value('loss_curiosity', curiosity_loss, current_counter)

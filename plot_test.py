@@ -20,7 +20,7 @@ if __name__ == '__main__':
     rewards = np.loadtxt(open(args.file, "rb"), delimiter=",")
 
     with plt.style.context("ggplot"):
-        c_i = 1 if args.no_curiosity else 5
+        c_i = 1 if args.no_curiosity else 4
         c = list(plt.rcParams['axes.prop_cycle'])[c_i]['color']
         # 1 -- blue
         # 5 -- green

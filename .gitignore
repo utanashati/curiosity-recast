@@ -3,4 +3,5 @@
 runs
 wrapper_test.py
 *_vizdoom.ini
-gym/vizdoomgym/vizdoomgym.egg-info
+*.egg-info
+gym/gym_picolmaze/gym_picolmaze/pics/out

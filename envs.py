@@ -1,6 +1,16 @@
 import cv2
 import gym
-import vizdoomgym
+
+try:
+    import gym_picolmaze
+except ImportError:
+    print("gym_picolmaze not found")
+
+try:
+    import vizdoomgym
+except ImportError:
+    print("vizdoomgym not found")
+
 import numpy as np
 from gym.spaces.box import Box
 
@@ -8,6 +18,13 @@ import env_wrapper
 import time
 
 from collections import deque
+
+
+def create_picolmaze_env(num_rooms=4, colors_func='same_1', periodic=False):
+    env = gym.make(
+        'picolmaze-v0', num_rooms=num_rooms,
+        colors_func=colors_func, periodic=False)
+    return env
 
 
 # Modified from envs.py in https://github.com/pathak22/noreward-rl

@@ -2,13 +2,12 @@ from __future__ import print_function
 
 import argparse
 import os
-import time
 
 import torch
 import torch.multiprocessing as mp
 
 import my_optim
-from envs import create_atari_env, create_doom_env
+from envs import create_atari_env, create_doom_env, create_picolmaze_env
 from model import ActorCritic, IntrinsicCuriosityModule
 
 from train import train
@@ -21,9 +20,7 @@ from test_curiosity import test_curiosity
 from itertools import chain  # ICM
 
 import logging
-import logger
-import tensorboard_logger as tb
-# from torch.utils.tensorboard import SummaryWriter
+from logger import setup_logs
 
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
@@ -76,7 +73,7 @@ parser.add_argument('--short-description', default='no-descr',
                     help="short description of the run (used in TensorBoard) "
                     "(default: 'no-descr')")
 parser.add_argument('--game', type=str, default='atari',
-                    help="game ('atari' or 'doom', default: 'atari')")
+                    help="game ('atari', 'doom' or 'picolmaze', default: 'atari')")
 parser.add_argument('--env-name', default='PongDeterministic-v4',
                     help="environment to train on "
                     "(default: PongDeterministic-v4)")
@@ -116,21 +113,12 @@ parser.add_argument('--curiosity-file', type=str, default=None,
                     help="curiosity file to start training with")
 parser.add_argument('--optimizer-file', type=str, default=None,
                     help="optimizer file to start training with")
+parser.add_argument('--steps-counter', type=int, default=0,
+                    help="set different initial steps counter "
+                    "(to continue from trained, default: 0)")
 
-
-def setup_loggings(args):
-    args.sum_base_dir = ('runs/{}/{}({})').format(
-        args.env_name, time.strftime('%Y.%m.%d-%H.%M'), args.short_description)
-
-    if not os.path.exists(args.sum_base_dir):
-        os.makedirs(args.sum_base_dir)
-
-    logger.configure(args.sum_base_dir, 'rl.log')
-
-    args_list = [f'{k}: {v}\n' for k, v in vars(args).items()]
-    logging.info("\nArguments:\n----------\n" + ''.join(args_list))
-    logging.info('Logging run logs to {}'.format(args.sum_base_dir))
-    tb.configure(args.sum_base_dir)
+parser.add_argument('--num-rooms', type=int, default=4,
+                    help="number of rooms in picolmaze.")
 
 
 if __name__ == '__main__':
@@ -140,17 +128,21 @@ if __name__ == '__main__':
     # Parse and check args
     args = parser.parse_args()
 
-    if args.game not in ['atari', 'doom']:
-        raise ValueError("Choose game between 'doom' and 'atari'.")
+    if args.game not in ['atari', 'doom', 'picolmaze']:
+        raise ValueError("Choose game between 'doom', 'atari' or 'picolmaze'.")
 
     if args.game == 'doom':
         args.max_episode_length = 2100
         args.max_episode_length_test = 2100
+    elif args.game == 'picolmaze':
+        args.max_episode_length = 500
+        args.max_episode_length_test = 500
+        args.num_stack = 3
     else:
         args.max_episode_length_test = 100
+        args.num_stack = 1
 
-    setup_loggings(args)
-    # writer = SummaryWriter(args.sum_base_dir)
+    setup_logs(args)
 
     if args.random_seed:
         random_seed = torch.randint(0, 1000, (1,))
@@ -165,6 +157,8 @@ if __name__ == '__main__':
             num_skip=args.num_skip, num_stack=args.num_stack)
     elif args.game == 'atari':
         env = create_atari_env(args.env_name)
+    elif args.game == 'picolmaze':
+        env = create_picolmaze_env(args.num_rooms)
 
     cx = torch.zeros(1, 256)
     hx = torch.zeros(1, 256)
@@ -175,7 +169,6 @@ if __name__ == '__main__':
         # env.observation_space.shape[0], env.action_space)
         args.num_stack, env.action_space)
     shared_model.share_memory()
-    # writer.add_graph(shared_model, (state.unsqueeze(0), hx, cx))
 
     if not args.no_curiosity:
         # <---ICM---
@@ -183,12 +176,7 @@ if __name__ == '__main__':
             # env.observation_space.shape[0], env.action_space)
             args.num_stack, env.action_space)
         shared_curiosity.share_memory()
-        # writer.add_graph(
-        #     shared_curiosity,
-        #     (state.unsqueeze(0), torch.tensor(0).reshape(1, 1), state.unsqueeze(0)))
         # ---ICM--->
-
-    # writer.close()
 
     if args.no_shared:
         optimizer = None
@@ -210,7 +198,7 @@ if __name__ == '__main__':
         logging.info("Start with a pretrained model")
         shared_model.load_state_dict(torch.load(args.model_file))
         optimizer.load_state_dict(torch.load(args.optimizer_file))
-        if (args.curiosity_file is not None):
+        if args.curiosity_file is not None:
             if not args.no_curiosity:
                 shared_curiosity.load_state_dict(
                     torch.load(args.curiosity_file))
@@ -233,7 +221,7 @@ if __name__ == '__main__':
     train_policy_losses = manager.list([0] * args.num_processes)
     train_value_losses = manager.list([0] * args.num_processes)
     train_rewards = manager.list([0] * args.num_processes)
-    counter = mp.Value('i', 0)
+    counter = mp.Value('i', args.steps_counter)
     lock = mp.Lock()
 
     if args.no_curiosity:

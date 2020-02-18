@@ -1,4 +1,4 @@
-# curiosity-recast
+# Maximum Likelihood Estimator with Variance for Curiosity-Driven Exploration
 This code is based on the [A3C implementaiton](https://github.com/ikostrikov/pytorch-a3c) by Ilya Kostrikov.
 
 ## Install
@@ -50,7 +50,15 @@ sudo /home/ubuntu/anaconda3/envs/pytorch_p36/bin/pip install vizdoom
 
 ## Reproduce
 ### [pytorch-a3c](https://github.com/ikostrikov/pytorch-a3c): Pong Deterministic
-TODO
+```
+python main.py --game "atari" --env-name "PongDeterministic-v4" --num-processes 16 --save-model-again-eps 5 --save-video-again-eps 1 --max-episodes 20 --random-seed --no-curiosity --short-description "pong-nocuriosity" --num-stack 1
+```
 
 ### [noreward-rl](https://github.com/pathak22/noreward-rl): VizDoom
+#### Dense
+```
+python main.py --num-processes 16 --game "doom" --env-name "dense" --time-sleep 60 --save-model-again-eps 5 --save-video-again-eps 1 --max-episodes 250 --short-description "doom-curiosity"
+```
+
+### Picolmaze
 TODO
