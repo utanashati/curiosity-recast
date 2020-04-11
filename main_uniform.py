@@ -44,11 +44,16 @@ parser.add_argument('--beta', type=float, default=0.2,
 parser.add_argument('--num-rooms', type=int, default=4,
                     help="number of rooms in picolmaze")
 parser.add_argument('--colors', type=str, default='same_1',
+                    choices=[
+                        'same_1', 'diff_1_num_rooms',
+                        'same_8', 'same_16'
+                    ],
                     help="function that sets up room entropies in picolmaze "
-                    "(default: 'same_1')")
+                    "(all funcs can be found in `gym_picolmaze/envs/picolmaze_env.py`, "
+                    "default: 'same_1')")
 parser.add_argument('--periodic', dest='periodic', action='store_true',
                     default=False,
-                    help="whether the arens is periodic or not")
+                    help="whether the arena is periodic or not")
 parser.add_argument('--hard-reset', dest='hard_reset', action='store_true',
                     default=False,
                     help="whether to reset the colors of the environment.")
