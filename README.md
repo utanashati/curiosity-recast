@@ -2,9 +2,9 @@
 This code is based on the [A3C implementaiton](https://github.com/ikostrikov/pytorch-a3c) by Ilya Kostrikov.
 
 **TODO**
-- [] Give a summary of the project (maybe from report)
-- [] Add report
-- [] Add link to defense
+- [ ] Give a summary of the project (maybe from report)
+- [ ] Add report
+- [ ] Add link to defense
 
 ## Install
 ### AWS Deep Learning AMI (Ubuntu 16.04)
