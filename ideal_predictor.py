@@ -48,20 +48,20 @@ if __name__ == '__main__':
                 curiosity(state.unsqueeze(0), action, state.unsqueeze(0))
             phis[i].append(phi.detach())
 
-    # means = []
-    # stds = []
-    # for room in phis:
-    #     room = torch.cat(room, 0)
-    #     print(room.shape)
-    #     print(torch.mean(room, dim=0).unsqueeze(0).shape)
-    #     means.append(torch.mean(room, dim=0).unsqueeze(0).numpy())
-    #     stds.append(torch.std(room, dim=0).unsqueeze(0).numpy())
+    means = []
+    stds = []
+    for room in phis:
+        room = torch.cat(room, 0)
+        print(room.shape)
+        print(torch.mean(room, dim=0).unsqueeze(0).shape)
+        means.append(torch.mean(room, dim=0).unsqueeze(0).numpy())
+        stds.append(torch.std(room, dim=0).unsqueeze(0).numpy())
 
-    # means = np.concatenate(means, 0)
-    # stds = np.concatenate(stds, 0)
+    means = np.concatenate(means, 0)
+    stds = np.concatenate(stds, 0)
 
-    # np.savetxt(os.path.join(args.folder, 'inv_head_means.csv'), means, delimiter=',')
-    # np.savetxt(os.path.join(args.folder, 'inv_head_stds.csv'), stds, delimiter=',')
+    np.savetxt(os.path.join(args.folder, 'inv_head_means.csv'), means, delimiter=',')
+    np.savetxt(os.path.join(args.folder, 'inv_head_stds.csv'), stds, delimiter=',')
 
     for i in range(len(phis)):
         for j in range(len(phis[i])):

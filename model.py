@@ -218,8 +218,11 @@ class IntrinsicCuriosityModule2(torch.nn.Module):
         curiosity_reward = \
             (forw_out_mean - phi2.detach())**2 / \
             (2 * (torch.exp(forw_out_log_std) + self.epsilon)**2)
+
         bayesian_loss = (
-            curiosity_reward + forw_out_log_std
+            (forw_out_mean - phi2.detach())**2 /
+            (2 * (torch.exp(forw_out_log_std) + self.epsilon)**2) +
+            forw_out_log_std
         ).sum(1).mean()
 
         return inv_out, phi2, forw_out_mean, torch.exp(forw_out_log_std), \

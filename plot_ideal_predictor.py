@@ -17,11 +17,11 @@ parser.add_argument('--num-rooms', type=int,
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    # means = np.loadtxt(open(
-    #     os.path.join(args.folder, 'inv_head_means.csv'), 'rb'), delimiter=',')
-    # stds = np.loadtxt(open(
-    #     os.path.join(args.folder, 'inv_head_stds.csv'), 'rb'), delimiter=',')
-    # stds = np.nan_to_num(stds)
+    means = np.loadtxt(open(
+        os.path.join(args.folder, 'inv_head_means.csv'), 'rb'), delimiter=',')
+    stds = np.loadtxt(open(
+        os.path.join(args.folder, 'inv_head_stds.csv'), 'rb'), delimiter=',')
+    stds = np.nan_to_num(stds)
     phis = np.loadtxt(open(
         os.path.join(args.folder, 'inv_head_phis.csv'), 'rb'), delimiter=',')
 
@@ -37,59 +37,59 @@ if __name__ == '__main__':
     vmin_std = 0
     vmax_std = 3
 
-    # cmap = 'viridis'
+    cmap = 'viridis'
 
 
-    # fig, axs = plt.subplots(side, side)
+    fig, axs = plt.subplots(side, side)
 
-    # for i in range(args.num_rooms):
-    #     ax = axs[i % side, i // side]
-    #     img = ax.imshow(means[i].reshape(16, 18), vmin=vmin_mean, vmax=vmax_mean)
-    #     img.set_cmap(cmap)
-    #     fig.colorbar(img, ax=ax)
-    #     ax.set_axis_off()
+    for i in range(args.num_rooms):
+        ax = axs[i % side, i // side]
+        img = ax.imshow(means[i].reshape(16, 18), vmin=vmin_mean, vmax=vmax_mean)
+        img.set_cmap(cmap)
+        fig.colorbar(img, ax=ax)
+        ax.set_axis_off()
 
-    # plt.savefig(os.path.join(args.folder, 'inv_head_means.pdf'), dpi=300)
-    # plt.close()
-
-
-    # fig, axs = plt.subplots(side, side)
-
-    # for i in range(args.num_rooms):
-    #     ax = axs[i % side, i // side]
-    #     img = ax.imshow(np.sort(means[i]).reshape(16, 18), vmin=vmin_mean, vmax=vmax_mean)
-    #     img.set_cmap(cmap)
-    #     fig.colorbar(img, ax=ax)
-    #     ax.set_axis_off()
-
-    # plt.savefig(os.path.join(args.folder, 'inv_head_means_sorted.pdf'), dpi=300)
-    # plt.close()
+    plt.savefig(os.path.join(args.folder, 'inv_head_means.pdf'), dpi=300)
+    plt.close()
 
 
-    # fig, axs = plt.subplots(side, side)
+    fig, axs = plt.subplots(side, side)
 
-    # for i in range(args.num_rooms):
-    #     ax = axs[i % side, i // side]
-    #     img = ax.imshow(stds[i].reshape(16, 18), vmin=vmin_std, vmax=vmax_std)
-    #     img.set_cmap(cmap)
-    #     fig.colorbar(img, ax=ax)
-    #     ax.set_axis_off()
+    for i in range(args.num_rooms):
+        ax = axs[i % side, i // side]
+        img = ax.imshow(np.sort(means[i]).reshape(16, 18), vmin=vmin_mean, vmax=vmax_mean)
+        img.set_cmap(cmap)
+        fig.colorbar(img, ax=ax)
+        ax.set_axis_off()
 
-    # plt.savefig(os.path.join(args.folder, 'inv_head_stds.pdf'), dpi=300)
-    # plt.close()
+    plt.savefig(os.path.join(args.folder, 'inv_head_means_sorted.pdf'), dpi=300)
+    plt.close()
 
 
-    # fig, axs = plt.subplots(side, side)
+    fig, axs = plt.subplots(side, side)
 
-    # for i in range(args.num_rooms):
-    #     ax = axs[i % side, i // side]
-    #     img = ax.imshow(np.sort(stds[i]).reshape(16, 18), vmin=vmin_std, vmax=vmax_std)
-    #     img.set_cmap(cmap)
-    #     fig.colorbar(img, ax=ax)
-    #     ax.set_axis_off()
+    for i in range(args.num_rooms):
+        ax = axs[i % side, i // side]
+        img = ax.imshow(stds[i].reshape(16, 18), vmin=vmin_std, vmax=vmax_std)
+        img.set_cmap(cmap)
+        fig.colorbar(img, ax=ax)
+        ax.set_axis_off()
 
-    # plt.savefig(os.path.join(args.folder, 'inv_head_stds_sorted.pdf'), dpi=300)
-    # plt.close()
+    plt.savefig(os.path.join(args.folder, 'inv_head_stds.pdf'), dpi=300)
+    plt.close()
+
+
+    fig, axs = plt.subplots(side, side)
+
+    for i in range(args.num_rooms):
+        ax = axs[i % side, i // side]
+        img = ax.imshow(np.sort(stds[i]).reshape(16, 18), vmin=vmin_std, vmax=vmax_std)
+        img.set_cmap(cmap)
+        fig.colorbar(img, ax=ax)
+        ax.set_axis_off()
+
+    plt.savefig(os.path.join(args.folder, 'inv_head_stds_sorted.pdf'), dpi=300)
+    plt.close()
 
 
     phis_tsne = TSNE(n_components=2, n_iter=2000, learning_rate=200).fit_transform(phis[:, 1:])
